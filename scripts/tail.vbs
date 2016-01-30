@@ -1,16 +1,17 @@
+' [Usage]
 ' 名前
 '        tail - ファイルの末尾部分を表示する
 ' 
 ' 書式
-'        tail [OPTION]... [FILE]...
+'        tail [OPTION]... [FILE]
 ' 
 ' 説明
 '        それぞれの FILE の末尾 10 行を標準出力へ出力する。
 '        複数の FILE が与えられた場合は、与えられたファイル名をヘッダとして先に出力する。
 '        FILE が与えられなかった場合、あるいは FILE が - の場合には標準入力から読み込む。
 ' 
-'        /c, /chars K
-'               末尾 K 文字を出力する; 各ファイルの K 文字目から出力を開始するには、代わりに +K を使う。
+'        /c K, /chars K
+'               末尾 K 文字(改行文字含む)を出力する; 各ファイルの K 文字目から出力を開始するには、代わりに +K を使う。
 ' 
 '        /f, /follow
 '               ファイルの内容が増え続ける時、追加されたデータを出力する。
@@ -21,18 +22,12 @@
 '        /n, /lines K
 '               末尾 10 行の代わりに末尾 K 行を出力する; 各ファイルの K 行目から出力を開始するには、代わりに +K を使う。
 ' 
-'        /q, /quiet, /silent
-'               与えられたファイル名をヘッダとして出力しない。
-' 
 '        /retry
 '               ファイルがアクセスできない、あるいはアクセスできなくなろうとしていたとしても、
 '               ファイルのオープンを繰り返す; /follow で追跡している場合に有用である。
 ' 
 '        /s, /sleep-interval N
 '               -f と共に使用する。追跡しているファイルのチェックを N 秒毎に行う。 (デフォルトは 1.0 秒)
-' 
-'        /v, /verbose
-'               与えられたファイル名を常にヘッダとして出力する。
 ' 
 '        /help このヘルプを表示して終了する。
 ' 
@@ -41,18 +36,19 @@
 ' 
 ' 注意
 '       ファイル記述子を使った追跡はできない。常にファイル名を使用する。
-' 
-' ======================================================================================================================
+'       オリジナルの tail コマンドと違って複数ファイルを同時に処理できない。
+
+' [Version]
+' tail version 0.1
 
 option explicit
 
 ' ==========
 ' parameters
 ' ==========
-dim line_mode, n, verbose, retry, follow, interval
+dim line_mode, n, retry, follow, interval
 line_mode = true
 n = "10"
-verbose = false
 retry = false
 follow = false
 interval = 1
@@ -87,15 +83,14 @@ do while i < WScript.Arguments.Count
         retry = true
     case "/f", "/follow"
         follow = true
-    case "/v", "/verbose"
-        verbose = true
-    case "/q", "/quiet", "/silent"
-        verbose = false
+    case "/F"
+        follow = true
+        retry = true
     case "/?", "/help"
-        call WScript.Echo("")
+        call view("Usage")
         call WScript.Quit(0)
     case "/version"
-        call WScript.Echo("head version 0.1")
+        call view("Version")
         call WScript.Quit(0)
     case else
         call WScript.Echo("未知のオプション'" & arg & "'が指定されました。")
@@ -104,93 +99,86 @@ do while i < WScript.Arguments.Count
     i = i + 1
 loop
 
-' =====================
-' parse arguments(list)
-' =====================
-dim list
-set list = CreateObject("System.Collections.ArrayList")
-do while i < WScript.Arguments.Count
-    arg = WScript.Arguments.Item(i)
-    call list.Add((new FileHandle).init(arg, line_mode))
+' ===============
+' parse arguments
+' ===============
+dim path
+if i < WScript.Arguments.Count then
+    path = WScript.Arguments.Item(i)
     i = i + 1
-loop
-if list.Count < 1 then call list.Add((new FileHandle).init("-", line_mode))
-
-' ============
-' output phase
-' ============
-dim fso, handle
-set fso = CreateObject("Scripting.FileSystemObject")
-i = 0
-do while i < list.Count
-    set handle = list.Item(i)
-    on error resume next
-    if Left(n, 1) = "+" then
-        if verbose or list.Count > 0 then call WScript.Echo("==> " & handle.GetName() & " <==")
-        call handle.skipTail(clng(n))
-        if err.number <> 0 then if not retry then call list.RemoveAt(i): i = i - 1: call err.clear()
-        if verbose or list.Count > 0 then call WScript.Echo("")
-    else
-        if verbose or list.Count > 0 then call WScript.Echo("==> " & handle.GetName() & " <==")
-        call handle.tail(clng(n))
-        if err.number <> 0 then if not retry then call list.RemoveAt(i): i = i - 1: call err.clear()
-        if verbose or list.Count > 0 then call WScript.Echo("")
-    end if
-    if handle.GetName() = "-" then call list.RemoveAt(i): i = i - 1
-    on error goto 0
-    i = i + 1
-loop
-
-dim current
-set current = handle
-
-' ============
-' follow phase
-' ============
-dim missings
-set missings = CreateObject("System.Collections.ArrayList")
-if follow then
-    do while true
-        i = 0
-        do while list.Count > 0 and i < list.Count
-            set handle = list.Item(i)
-            if not handle.isExists() then
-                call WScript.StdErr.WriteLine("File not found. '" & handle.GetName() & "'")
-                call list.Remove(handle)
-                i = i - 1
-                call missinglist.Add(handle)
-            elseif handle.isReplaced() then
-                call WScript.StdErr.WriteLine("File replaced. '" & handle.GetName() & "'")
-                if not current is handle and verbose then _
-                    call WScript.Echo(vbCrLf & "==> " & handle.GetName() & " <==")
-                call handle.TailAll(0)
-                set current = handle
-            elseif handle.isModified() then
-                if not current is handle and verbose then _
-                    call WScript.Echo(vbCrLf & "==> " & handle.GetName() & " <==")
-                call handle.tailFollow()
-                set current = handle
-            end if
-            i = i + 1
-        loop
-        
-        i = 0
-        do while missings.Count > 0 and i < missings.Count
-            set handle = missings.Item(i)
-            if handle.isExists() then
-                call list.Add(handle)
-                call missing.Remove(handle)
-                i = i - 1
-            end if
-            i = i + 1
-        loop
-        
-        call WScript.Sleep(interval)
-    loop
 end if
 
-' TODO 前回見つからなかったファイルは、次のループで存在確認し、それでも無ければ何も表示しない
-' TODO 複数ファイルだった場合は silent オプションが無い場合はファイル名を表示する
+' ========
+' output
+' ========
+dim fso, file, term, exists
+set fso = CreateObject("Scripting.FileSystemObject")
+exists = true
+on error resume next
+if isEmpty(path) then
+    set file = WScript.StdIn
+else
+    set file = fso.OpenTextFile(path)
+end if
+if err.number <> 0 then
+    call WScript.StdErr.WriteLine("tail: file not found. '" & path & "'")
+    call err.clear()
+    exists = false
+end if
+on error goto 0
+
+if left(n, 1) = "+" then
+    term = skip(file, clng(n), line_mode)
+else
+    term = tail(file, clng(n), line_mode)
+end if
+
+call file.Close()
+
+
+' =======
+' follow
+' =======
+dim before
+before = term
+do while follow
+    if exists then
+        if fso.FileExists(fso.GetAbsolutePathName(path)) then
+            on error resume next
+            set file = fso.OpenTextFile(fso.GetAbsolutePathName(path))
+            if err.number <> 0 then
+                call err.clear()
+                if not retry then exit do
+            end if
+            term = skip(file, term, line_mode)
+            if term < before then call WScript.StdErr.WriteLine("tail: " & path & ": file truncated.")
+            call file.Close()
+            on error goto 0
+            exists = true
+        else
+            call WScript.StdErr.WriteLine("not found. '" & path & "'")
+            exists = false
+        end if
+    else
+        if fso.FileExists(fso.GetAbsolutePathName(path)) then
+            on error resume next
+            set file = fso.OpenTextFile(fso.GetAbsolutePathName(path))
+            if err.number <> 0 then
+                call err.clear()
+                if not retry then exit do
+            end if
+            term = skip(file, term, line_mode)
+            if term < before then call WScript.StdErr.WriteLine("tail: " & path & ": file truncated.")
+            call file.Close()
+            on error goto 0
+            exists = true
+        else
+            exists = false
+        end if
+    end if
+    before = term
+    call WScript.Sleep(interval * 1000)
+loop
 
 ' ====
 ' exit
@@ -198,230 +186,72 @@ end if
 call WScript.Quit(0)
 
 
-' ============
+
+' ======
 ' define
-' ============
-class FileHandle
-    private pfso
-    private line_mode
-    private file_name
-    
-    private current_pos
-    private modified
-    private created
-    private file_exists
-    
-    public function GetName()
-        GetName = file_name
-    end function
-    
-    public function init(byval n, byval m)
-        line_mode = m
-        file_name = n
-        
-        current_pos = 0
-        
-        if isEmpty(fso) then
-            set pfso = CreateObject("Scripting.FileSystemObject")
-        else
-            set pfso = fso
+' ======
+function view(byval label)
+    dim fso, satream, line
+    set fso = CreateObject("Scripting.FileSystemObject")
+    set stream = fso.OpenTextFile(WScript.ScriptFullName)
+    do while not stream.AtEndOfStream
+        line = stream.ReadLine()
+        if line = "' " & label then
+            do while not stream.AtEndOfStream
+                line = stream.ReadLine()
+                if left(line, 1) <> "'" then exit do
+                call WScript.Stdout.WriteLine(mid(line, 3))
+            loop
         end if
-        
-        if pfso.FileExists(file_name) then
-            created = pfso.GetFile(file_name).DateCreated
-            modified = pfso.GetFile(file_name).DateLastModified
-            file_exists = true
-        else
-            if file_name <> "-" then call WScript.StdErr.WriteLine("File not found. '" & file_name & "'")
-            created = #1900/1/1#
-            modified = #1900/1/1#
-            file_exists = false
-        end if
-        
-        set init = me
-    end function
-    
-    public function skipTail(byval n)
-        ' open stream
-        dim file
-        if file_name = "-" then
-            set file = WScript.StdIn
-        else
-            if not pfso.FileExists(file_name) then
-                call err.raise(12345, TypeName(me), "File not found. '" & file_name & "'")
-            end if
-            set file = fso.OpenTextFile(file_name)
-        end if
-        
-        ' skip and write to stream
+    loop
+end function
+
+function skip(byval stream, byval n, byval line_mode)
+    dim count
+    count = 0
+    do while not stream.AtEndOfStream and count < n
         if line_mode then
-            current_pos = skipTail_lineMode(file, n)
-        else
-            current_pos = skipTail_charMode(file, n)
-        end if
-    end function
-    
-    private function skipTail_lineMode(byval stream, byval n)
-        dim i
-        i = 0
-        do while not stream.AtEndOfStream
-            if i = n then exit do
             call stream.ReadLine()
-            i = i + 1
-        loop
-        
-        do while not stream.AtEndOfStream
-            call WScript.Stdout.WriteLine(stream.ReadLine())
-            i = i + 1
-        loop
-        skipTail_lineMode = i
-    end function
-    
-    private function skipTail_charMode(byval stream, byval n)
-        dim i
-        i = 0
-        do while not stream.AtEndOfStream
-            if i = n then exit do
+        else
             call stream.Read(1)
-            i = i + 1
-        loop
-        
-        do while not stream.AtEndOfStream
+        end if
+        count = count + 1
+    loop
+    
+    do while not stream.AtEndOfStream
+        if line_mode then
+            call WScript.Stdout.Write(stream.ReadLine() & vbCrLf)
+        else
             call WScript.Stdout.Write(stream.Read(1))
-            i = i + 1
-        loop
-        skipTail_charMode = i
-    end function
-    
-    
-    public function tail(byval n)
-        dim file
-        
-        ' open stream
-        if file_name = "-" then
-            set file = WScript.StdIn
-        else
-            if not pfso.FileExists(file_name) then
-                call err.raise(12345, TypeName(me), "File not found. '" & file_name & "'")
-            end if
-            set file = pfso.OpenTextFile(file_name)
         end if
-        
-        ' output tail data
+        count = count + 1
+    loop
+    skip = count
+end function
+
+function tail(byval stream, byval n, byval line_mode)
+    dim buf(), i, total
+    redim buf(n - 1)
+    i = 0
+    total = 0
+    do while not stream.AtEndOfStream
         if line_mode then
-            call tail_lineMode(file, n)
+            buf(i) = stream.ReadLine() & vbCrLf
         else
-            call tail_charMode(file, n)
+            buf(i) = stream.Read(1)
         end if
-    end function
+        total = total + 1
+        i = (i + 1) mod n
+    loop
     
-    private function tail_lineMode(byval stream, byval n)
-        dim buf
-        redim buf(n - 1)
-        
-        dim i
-        i = 0
-        do while not stream.AtEndOfStream
-            buf(i mod n) = stream.ReadLine()
-            i = i + 1
-        loop
-        call stream.Close()
-        current_pos = i
-        
-        dim term
-        term = i mod n
-        if i < n then
-            i = 0
-        else
-            i = (i + 1) mod n
-        end if
-        do while i <> term
-            call WScript.Stdout.WriteLine(buf(i))
-            i = (i + 1) mod n
-        loop
-    end function
-    
-    private function tail_charMode(byval stream, byval n)
-        dim buf
-        redim buf(n - 1)
-        
-        dim i
-        i = 0
-        do while not stream.AtEndOfStream
-            buf(i mod n) = stream.Read(1)
-            i = i + 1
-        loop
-        call stream.Close()
-        current_pos = i
-        
-        dim term
-        term = i mod n
-        if i < n then
-            i = 0
-        else
-            i = (i + 1) mod n
-        end if
-        do while term <> i
-            call WScript.Stdout.Write(buf(i))
-            i = (i + 1) mod n
-        loop
-    end function
-    
-    public function isExists()
-        if file_name = "-" then
-            isExists = true
-        else
-            isExists = pfso.FileExists(file_name)
-        end if
-    end function
-    
-    public function isReplaced()
-        isReplaced = false
-        if not pfso.FileExists(file_name) then exit function
-        
-        dim d
-        d = pfso.GetFile(file_name).DateCreated
-        if created < d then
-            isReplaced = true
-            created = d
-        end if
-    end function
-    
-    public function isModified()
-        isModified = false
-        if not pfso.FileExists(file_name) then exit function
-        
-        dim d
-        d = pfso.getFile(file_name).DateLastModified
-        if modified < d then
-            isModified = true
-            modified = d
-        end if
-    end function
-    
-    public function tailAll()
-        call init(file_name, line_mode)
-        call skipTail(0)
-    end function
-    
-    public function tailFollow()
-        ' open stream
-        dim file
-        if not pfso.FileExists(file_name) then _
-            call err.raise(12345, TypeName(me), "File not found. '" & file_name & "'")
-        set file = fso.OpenTextFile(file_name)
-        
-        ' skip and write to stream
-        dim pos
-        if line_mode then
-            pos = skipTail_lineMode(file, current_pos)
-            if pos =< current_pos then _
-                call WScript.StdErr.WriteLine("cut")
-        else
-            pos = skipTail_charMode(file, current_pos)
-            if pos =< current_pos then _
-                call WScript.StdErr.WriteLine("cut")
-        end if
-        current_pos = pos + 1
-    end function
-end class
+    dim term, count
+    term = n
+    if total < n then term = i : i = 0
+    count = 0
+    do while count < term
+        call WScript.StdOut.Write(buf(i))
+        count = count + 1
+        i = (i + 1) mod n
+    loop
+    tail = total
+end function
