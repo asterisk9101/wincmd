@@ -196,7 +196,7 @@ function view(byval label)
     set stream = fso.OpenTextFile(WScript.ScriptFullName)
     do while not stream.AtEndOfStream
         line = stream.ReadLine()
-        if line = "' " & label then
+        if line = "' [" & label & "]" then
             do while not stream.AtEndOfStream
                 line = stream.ReadLine()
                 if left(line, 1) <> "'" then exit do
