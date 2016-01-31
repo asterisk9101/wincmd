@@ -64,7 +64,7 @@ loop
 ' =============================
 ' parse arguments(output files)
 ' =============================
-dim fso, file, files
+dim fso, file, files, errcode
 set fso = CreateObject("Scripting.FileSystemObject")
 set files = CreateObject("System.Collections.ArrayList")
 do while i < WScript.Arguments.Count
