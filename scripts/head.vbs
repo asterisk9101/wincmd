@@ -130,12 +130,20 @@ for each fileName in files
             call WScript.Stdout.WriteLine(file.ReadLine())
             i = i + 1
         loop
+        do while not file.AtEndOfStream
+            call file.ReadLine()
+        loop
+        call file.Close()
     else
         do while i < n
             if file.AtEndOfStream then exit do
             call WScript.Stdout.Write(file.Read(1))
             i = i + 1
         loop
+        do while not file.AtEndOfStream
+            call file.Read(1)
+        loop
+        call file.Close()
     end if
     if verbose and files.Count > 1 then call WScript.Echo("")
 next
