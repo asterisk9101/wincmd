@@ -155,7 +155,7 @@ call WScript.Quit(0)
 ' define
 ' ======
 function view(byval label)
-    dim fso, satream, line
+    dim fso, stream, line
     set fso = CreateObject("Scripting.FileSystemObject")
     set stream = fso.OpenTextFile(WScript.ScriptFullName)
     do while not stream.AtEndOfStream
