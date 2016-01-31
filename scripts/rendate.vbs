@@ -1,3 +1,27 @@
+' [Usage]
+' 名前
+'     rendate - ファイル名に日付を付与する
+' 
+' 書式
+'     rendate FILE
+'     rendate [/?] [/help] [/v] [/version]
+' 
+' 説明
+'     FILE に与えられたファイル名に日付を付与する。
+'     デフォルトでは、FILE_yyyymmdd.ext になる。
+' 
+'     /s
+'         リネーム書式を FILE_yyyymmdd_hhmsss.ext に変更する。
+' 
+'     /?, /help
+'         使い方を表示して正常終了する。
+' 
+'     /v, /version
+'         バージョン情報を表示して正常終了する。
+
+' [Version]
+' rendate.vbs version 0.1
+
 option explicit
 
 dim hhmiss
@@ -10,6 +34,12 @@ do while i < WScript.Arguments.Count
     if left(arg, 1) <> "/" then exit do
     select case arg
     case "/s" hhmiss = true
+    case "/?", "/help"
+        call view("Usage")
+        call WScript.Quit(0)
+    case "/v", "/version"
+        call view("Version")
+        call WScript.Quit(0)
     case else call err.raise(12345, "rendate", "invalid option name. '" & arg & "'")
     end select
     i = i + 1
@@ -56,3 +86,22 @@ for each file in files
         call WScript.StdErr.WriteLine("File not found. '" & file & "'")
     end if
 next
+
+' ======
+' define
+' ======
+function view(byval label)
+    dim fso, stream, line
+    set fso = CreateObject("Scripting.FileSystemObject")
+    set stream = fso.OpenTextFile(WScript.ScriptFullName)
+    do while not stream.AtEndOfStream
+        line = stream.ReadLine()
+        if line = "' [" & label & "]" then
+            do while not stream.AtEndOfStream
+                line = stream.ReadLine()
+                if left(line, 1) <> "'" then exit do
+                call WScript.Stdout.WriteLine(mid(line, 3))
+            loop
+        end if
+    loop
+end function
