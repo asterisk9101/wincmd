@@ -181,7 +181,6 @@ class DateFormat
                 case "k" call sb.Append_3(hour00(date_time, 24, false))
                 case "l" call sb.Append_3(hour00(date_time, 12, false))
                 case "M" call sb.Append_3(minute00(date_time, true))
-                case "n" call sb.Append_3(vbCrLf)
                 case "p" call sb.Append_3(ampm(date_time))
                 case "r" call sb.Append_3(time12(date_time))
                 case "S" call sb.Append_3(second00(date_time, true))
@@ -190,7 +189,9 @@ class DateFormat
                 case "A" call sb.Append_3(weekday00(date_time, false))
                 case "b" call sb.Append_3(monthName00(date_time, true))
                 case "B" call sb.Append_3(monthName00(date_time, false))
+                case "%" call sb.Append_3("%")
                 case "t" call sb.Append_3(vbTab)
+                case "n" call sb.Append_3(vbCrLf)
                 case else call sb.Append_3(ch)
                 end select
             else
@@ -297,7 +298,7 @@ class DateFormat
         time12 = hour00(date_time, 12, true)
         time12 = time12 & ":" & minute00(date_time, true)
         time12 = time12 & ":" & second00(date_time, true)
-        time12 = time12 & " " & ampm(date_time, locale)
+        time12 = time12 & " " & ampm(date_time)
     end function
     
     private function time24(byval date_time)
