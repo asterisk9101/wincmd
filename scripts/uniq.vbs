@@ -3,7 +3,7 @@
 '     uniq - ソートされたファイルから重なった行を削除する
 ' 
 ' 書式
-'     uniq [INFILE]
+'     uniq [/c] [/i] [d] [u] [INFILE]
 '     uniq [/?] [/help] [/v] [/version]
 ' 
 ' 説明
@@ -72,6 +72,9 @@ do while i < WScript.Arguments.Count
     case "/v", "/version"
         call view("Version")
         call WScript.Quit(0)
+    case else
+        call WScript.StdErr.WriteLine("uniq: invalid argument. '" & arg & "'")
+        call WScript.Quit(1)
     end select
     i = i + 1
 loop
@@ -106,60 +109,44 @@ end if
 ' ============
 ' main
 ' ============
-dim before, line, num
+dim line, n, next_line
 
 ' empty file
 if file.AtEndOfStream then call WScript.Quit(0)
 
-before = file.ReadLine()
-num = 1
-
-' 1 line file
-if file.AtEndOfStream then
-    if repeat then
-        ' no output
-    elseif unique then
-        call output(before, num, count)
-    else
-        call output(before, num, count)
-    end if
+' 1 line
+n = 1
+line = file.ReadLine()
+if file.AtEndOfStream and not repeat then
+    call output(line, n, count)
 end if
 
-' 2 lines or more
+' 2 line more over
 do while not file.AtEndOfStream
-    line = file.ReadLine()
-    
-    ' count and skip
-    do while compare(before, line, ignoreCase)
-        num = num + 1
-        if file.AtEndOfStream then exit do
-        line = file.ReadLine()
+    do while not file.AtEndOfStream
+        next_line = file.ReadLine()
+        if line = next_line then
+            n = n + 1
+        else
+            exit do
+        end if
     loop
     
-    ' output
     if repeat then
-        if num <> 1 then call output(before, num, count)
+        if num <> 1 then call output(line, n, count)
     elseif unique then
-        if num = 1 then call output(before, num, count)
+        if num = 1 then call output(line, n, count)
     else
-        call output(before, num, count)
+        call output(line, n, count)
     end if
     
-    ' output(EOF)
-    if file.AtEndOfStream and not compare(before, line, ignoreCase) then
-        if repeat then
-            if num <> 1 then call output(before, num, count)
-        elseif unique then
-            if num = 1 then call output(before, num, count)
-        else
-            call output(before, num, count)
-        end if
+    if file.AtEndOfStream and line <> next_line then
+        if not repeat then call output(next_line, 1, count)
     end if
     
-    before = line
-    num = 1
+    n = 1
+    line = next_line
 loop
-
 
 ' ======
 ' exit
