@@ -342,14 +342,14 @@ function CompressNull(byval list)
     i = 1
     do while i < list.Count
         next_val = list.Item(i)
-        if val <> null or next_val <> null then
+        if not isNull(val) or not isNull(next_val) then
             call newlist.Add(next_val)
         end if
         val = next_val
         i = i + 1
     loop
     
-    set CompressNull = list
+    set CompressNull = newlist
 end function
 
 function TrimNull(byval list)
@@ -363,10 +363,10 @@ function TrimNull(byval list)
     if newlist.Count = 0 then
         ' nanimosinai
     elseif list.Count = 1 then
-        if newlist.Item(0) = null then call newlist.RemoveAt(0)
+        if isNull(newlist.Item(0)) then call newlist.RemoveAt(0)
     else
-        if newlist.Item(0) = null then call newlist.RemoveAt(0)
-        if newlist.Item(newlist.Count - 1) = null then
+        if isNull(newlist.Item(0)) then call newlist.RemoveAt(0)
+        if isNull(newlist.Item(newlist.Count - 1)) then
             call newlist.RemoveAt(newlist.Count - 1)
         end if
     end if
