@@ -1,5 +1,7 @@
 # WinCmd
 
+必要が無ければこのコマンド群を使用しないでください。これらに相当するコマンド群は Powershell に含まれています。
+
 Windows標準機能(.NET含む)で、コマンドプロンプトからLinuxっぽいコマンドを使えるようにします。
 
 `git clone` してから PATH に wincmd\bin を追加してください。
@@ -23,6 +25,7 @@ set PATH=C:\wincmd\bin;%PATH%
 - tee
 - sleep
 - uniq
+- cut
 - wc
 - which
 - each(簡易xargs)
@@ -41,7 +44,9 @@ set PATH=C:\wincmd\bin;%PATH%
 - awk(きっと永遠に作りかけ)
 
 # 作りたい
-
-- cut
+- tr
 - sed
 - sort
+- grep
+- find
+- xargs
