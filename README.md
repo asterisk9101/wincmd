@@ -1,6 +1,6 @@
-# WinCmd
+**※必要が無ければこのコマンド群を使用しないでください。これらに相当するコマンド群は Powershell に含まれています。**
 
-必要が無ければこのコマンド群を使用しないでください。これらに相当するコマンド群は Powershell に含まれています。
+# WinCmd
 
 Windows標準機能(.NET含む)で、コマンドプロンプトからLinuxっぽいコマンドを使えるようにします。
 
@@ -28,6 +28,7 @@ set PATH=C:\wincmd\bin;%PATH%
 - cut
 - wc
 - which
+- mustache 
 - each(簡易xargs)
 - cat(type)
 - ls(dir /b)
