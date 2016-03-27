@@ -26,6 +26,7 @@ set PATH=C:\wincmd\bin;%PATH%
 - sleep
 - uniq
 - cut
+- sed
 - wc
 - which
 - mustache 
@@ -46,8 +47,8 @@ set PATH=C:\wincmd\bin;%PATH%
 
 # 作りたい
 - tr
-- sed
 - sort
 - grep
 - find
 - xargs
+- make
