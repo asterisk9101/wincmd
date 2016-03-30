@@ -576,8 +576,8 @@ function sed(opts, scripts, inputs) {
     
     function vmachine(opt, list){
         var sed_state = {
-            pattern: "",
-            hold: "",
+            pattern: [],
+            hold: [],
             line_num: 0,
             AtEndOfStream: false
         };
@@ -606,7 +606,7 @@ function sed(opts, scripts, inputs) {
                 break;
             case "c":
                 WScript.StdOut.Write(text + stream.br);
-                sed_state.pattern = "";
+                sed_state.pattern = [];
                 break;
             case "i":
                 WScript.StdOut.Write(text + stream.br);
@@ -616,8 +616,8 @@ function sed(opts, scripts, inputs) {
         function cmd_print(cmd){
             var text;
             switch(cmd.name){
-            case "p": text = sed_state.pattern; break;
-            case "P": text = sed_state.pattern.slice(0, pattern.indexOf(stream.br)); break;
+            case "p": text = sed_state.pattern.join(stream.br); break;
+            case "P": text = sed_state.pattern[0]; break;
             }
             WScript.StdOut.Write(text + stream.br);
         }
@@ -625,10 +625,10 @@ function sed(opts, scripts, inputs) {
             var line;
             switch(cmd.name){
             case "n":
-                sed_state.pattern = stream.ReadLine();
+                sed_state.pattern = [stream.ReadLine()];
                 break;
             case "N":
-                sed_state.pattern = sed_state.pattern + stream.br + stream.ReadLine();
+                sed_state.pattern.push(stream.ReadLine());
                 break;
             }
             sed_state.line_num += 1;
@@ -636,7 +636,7 @@ function sed(opts, scripts, inputs) {
         }
         function cmd_quit(cmd){
             if(cmd.name === "q"){
-                WScript.StdOut.Write(sed_state.pattern + stream.br);
+                WScript.StdOut.Write(sed_state.pattern.join(stream.br) + stream.br);
             }
             if (cmd.args.length === 0) {
                 WScript.Quit(0);
@@ -650,10 +650,10 @@ function sed(opts, scripts, inputs) {
             var line;
             switch(cmd.name){
             case "w":
-                line = sed_state.pattern;
+                line = sed_state.pattern.join(stream.br);
                 break;
             case "W":
-                line = sed_state.pattern.split(stream.br)[0];
+                line = sed_state.pattern[0];
                 break;
             }
             file.Write(line + stream.br);
@@ -689,29 +689,31 @@ function sed(opts, scripts, inputs) {
             flags = cmd.args[2];
             path = cmd.args[3];
             
-            if(regexp.test(sed_state.pattern)){
-                sed_state.pattern = sed_state.pattern.replace(regexp, replacement);
+            var text = sed_state.pattern.join(stream.br)
+            if(regexp.test(text)){
+                text = text.replace(regexp, replacement);
                 success = true;
                 if (flags.indexOf("w") > -1) {
                     file = fso.OpenTextFile(path, 2, true);
-                    file.WriteLine(sed_state.pattern);
+                    file.Write(text + stream.br);
                     file.Close();
                 }
                 if (flags.indexOf("p") > -1) {
-                    WScript.StdOut.Write(sed_state.pattern + stream.br);
+                    WScript.StdOut.Write(text + stream.br);
                 }
+                sed_state.pattern = text.split(stream.br);
             }
         }
         function cmd_y(cmd) {
-            var i, len, src, dest, pattern;
+            var i, len, src, dest, text;
             src = cmd.args[0];
             dest = cmd.args[1];
             
-            pattern = sed_state.pattern;
+            text = sed_state.pattern.join(stream.br);
             for(i = 0, len = src.length; i < len; i++) {
-                pattern = pattern.replace(new RegExp(src.charAt(i), "g"), dest.charAt(i));
+                text = text.replace(new RegExp(src.charAt(i), "g"), dest.charAt(i));
             }
-            sed_state.pattern = pattern;
+            sed_state.pattern = pattern.split(stream.br);
         }
         function command(stat) {
             var cmd = stat.cmd, tmp;
@@ -728,22 +730,22 @@ function sed(opts, scripts, inputs) {
                 break;
             case "=": WScript.StdOut.WriteLine(sed_state.line_num); break;
             case "d": 
-                sed_state.pattern = ""; 
+                sed_state.pattern = [];
                 pc = stat_tail;
                 break;
             case "D": 
-                if (sed_state.indexOf(stream.br) > -1) {
-                    sed_state.pattern = sed_state.pattern.slice(tmp + stream.br.length);
+                if (sed_state.pattern.length > 1) {
+                    sed_state.pattern.shift();
                     pc = stat_head;
                 } else {
-                    sed_state.pattern = "";
+                    sed_state.pattern = [];
                     pc = stat_tail;
                 }
                 break;
             case "h": sed_state.hold = sed_state.pattern; break;
-            case "H": sed_state.hold = sed_state.hold + stream.br + sed_state.pattern; break;
+            case "H": sed_state.pattern.forEach(function (x) { sed_state.hold.push(x); }); break;
             case "g": sed_state.pattern = sed_state.hold; break;
-            case "G": sed_state.pattern = sed_state.pattern + stream.br + sed_state.hold; break;
+            case "G": sed_state.hold.forEach(function (x) { sed_state.pattern.push(x); }); break;
             case "n": cmd_next(cmd); break;
             case "N": cmd_next(cmd); break;
             case "p": cmd_print(cmd); break;
@@ -786,7 +788,7 @@ function sed(opts, scripts, inputs) {
         function run(strm) {
             stream = strm;
             while(!stream.AtEndOfStream){
-                sed_state.pattern = stream.ReadLine();
+                sed_state.pattern = [stream.ReadLine()];
                 sed_state.line_num += 1;
                 sed_state.AtEndOfStream = stream.AtEndOfStream;
                 pc = stat_head;
@@ -796,8 +798,8 @@ function sed(opts, scripts, inputs) {
                     }
                     pc = pc.next;
                 }
-                if(!opt.n && sed_state.pattern) {
-                    WScript.StdOut.Write(sed_state.pattern + stream.br);
+                if(!opt.n && sed_state.pattern.join(stream.br)) {
+                    WScript.StdOut.Write(sed_state.pattern.join(stream.br) + stream.br);
                 }
                 if (append_text.length !== 0) {
                     WScript.StdOut.Write(append_text.join(stream.br) + stream.br);
@@ -926,6 +928,33 @@ function sed(opts, scripts, inputs) {
     vm.run(files);
 }
 
+// https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach
+if ( !Array.prototype.forEach ) {
+    Array.prototype.forEach = function( callback, thisArg ) {
+        var T, k;
+        if ( this == null ) {
+            throw new Error( " this is null or not defined" );
+        }
+        var O = Object(this);
+        var len = O.length >>> 0; // Hack to convert O.length to a UInt32
+        if ( {}.toString.call(callback) != "[object Function]" ) {
+            throw new Error( callback + " is not a function" );
+        }
+        if ( thisArg ) { T = thisArg; }
+        k = 0;
+        while( k < len ) {
+            var kValue;
+            if ( k in O ) {
+                kValue = O[ k ];
+                callback.call( T, kValue, k, O );
+            }
+            k++;
+        }
+    };
+}
+
+
+
 // parse options
 var fso = WScript.CreateObject("Scripting.FileSystemObject");
 var arg, i, len, opts = {}, scripts = [], inputs = [];
@@ -992,7 +1021,7 @@ for(; i < len; i++){
     } else if (arg === "-") {
         inputs.push("-");
     } else {
-        WScript.StdErr("");
+        WScript.StdErr.WriteLine("");
     }
 }
 
