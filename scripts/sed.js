@@ -799,7 +799,7 @@ function sed(opts, scripts, inputs) {
                 if(!opt.n && sed_state.pattern) {
                     WScript.StdOut.Write(sed_state.pattern + stream.br);
                 }
-                if (append_text) {
+                if (append_text.length !== 0) {
                     WScript.StdOut.Write(append_text.join(stream.br) + stream.br);
                     append_text = [];
                 }
