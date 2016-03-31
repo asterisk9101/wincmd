@@ -832,77 +832,7 @@ function sed(opts, scripts, inputs) {
         }
     }
 
-    function files_stream (paths, br_pattern) {
-        // 複数のファイルパスを受け取り、それららの内容を連続したストリームとして出力する。
-        // 第一引数 paths として、ファイルパスの配列 (Array<String>) を受け取る。
-        // 第二引数 br_pattern として、ファイルの改行コード (String) を受け取る。
-        // 戻り値として、files_stream(Object) を返す。
-        var br = br_pattern || "\r\n";
-        var file = null;
-        var AtEndOfStream = false;
-        var at = 0;
-        var fso = WScript.CreateObject("Scripting.FileSystemObject");
-        
-        function next() {
-            // 現在開いているファイルが無いか、もしくは終端に達していた場合、次のファイルを開く。
-            if (file === null || file.AtEndOfStream) {
-                try {
-                    if (file) { file.Close(); }
-                    file = paths[at] === "-" ? WScript.StdIn : fso.OpenTextFile(paths[at]);
-                } catch(e) {
-                    WScript.StdErr.WriteLine("sed: file open fail. " + paths[at]);
-                }
-                at++;
-            }
-        }
-        function Read(n) {
-            // 現在開いているファイルから n 文字読み取る。
-            // 第一引数 n として、ファイルから読み取る文字数 (Number) を受け取る。
-            // 戻り値として、読み取った文字列 (String) を返す。
-            var str;
-            if (this.AtEndOfStream) { return ""; }
-            next();
-            
-            str = file.Read(n);
-            
-            if (at === paths.length &&  file.AtEndOfStream) { this.AtEndOfStream = true; }
-            return str;
-        }
-        function ReadLine() {
-            // 現在開いているファイルから 1 行読み取る。
-            // 戻り値として、読み取った文字列 (String) を返す。
-            if (this.AtEndOfStream) { return ""; }
-            next();
-            var buf = [], ch, line;
-            
-            switch (this.br) {
-            case "\r\n":
-                line = file.ReadLine();
-                break;
-            case "\n":
-            case "\r":
-                ch = file.Read(1);
-                while(ch !== this.br && !file.AtEndOfStream){
-                    buf.push(ch);
-                    ch = file.Read(1);
-                }
-                line = buf.join("");
-                break;
-            default:
-                throw new Error();
-            }
-            if (at === paths.length &&  file.AtEndOfStream) { this.AtEndOfStream = true; }
-            return line;
-        }
-        return {
-            AtEndOfStream: AtEndOfStream, 
-            br: br, 
-            Read: Read, 
-            ReadLine: ReadLine
-        };
-    }
     var files = files_stream(inputs, opts.br);
-    
     /* test files_stream
     while(!files.AtEndOfStream){
         WScript.StdOut.WriteLine(files.ReadLine());
@@ -910,11 +840,6 @@ function sed(opts, scripts, inputs) {
     }
     */
     
-    /*
-        あとでやる
-        stream は常に行末が br か eof か知っておく。
-        vmachine は br がある場合は br を出力し、無ければ br は出力しない。
-    */
     var list = parser(scripts.join("\r\n"));
     /* test parser
     var item = list;
@@ -926,6 +851,75 @@ function sed(opts, scripts, inputs) {
     
     var vm = vmachine(opts, list);
     vm.run(files);
+}
+function files_stream (paths, br_pattern) {
+    // 複数のファイルパスを受け取り、それららの内容を連続したストリームとして出力する。
+    // 第一引数 paths として、ファイルパスの配列 (Array<String>) を受け取る。
+    // 第二引数 br_pattern として、ファイルの改行コード (String) を受け取る。
+    // 戻り値として、files_stream(Object) を返す。
+    var br = br_pattern || "\r\n";
+    var file = null;
+    var AtEndOfStream = false;
+    var at = 0;
+    var fso = WScript.CreateObject("Scripting.FileSystemObject");
+    
+    function next() {
+        // 現在開いているファイルが無いか、もしくは終端に達していた場合、次のファイルを開く。
+        if (file === null || file.AtEndOfStream) {
+            try {
+                if (file) { file.Close(); }
+                file = paths[at] === "-" ? WScript.StdIn : fso.OpenTextFile(paths[at]);
+            } catch(e) {
+                WScript.StdErr.WriteLine("sed: file open fail. " + paths[at]);
+            }
+            at++;
+        }
+    }
+    function Read(n) {
+        // 現在開いているファイルから n 文字読み取る。
+        // 第一引数 n として、ファイルから読み取る文字数 (Number) を受け取る。
+        // 戻り値として、読み取った文字列 (String) を返す。
+        var str;
+        if (this.AtEndOfStream) { return ""; }
+        next();
+        
+        str = file.Read(n);
+        
+        if (at === paths.length &&  file.AtEndOfStream) { this.AtEndOfStream = true; }
+        return str;
+    }
+    function ReadLine() {
+        // 現在開いているファイルから 1 行読み取る。
+        // 戻り値として、読み取った文字列 (String) を返す。
+        if (this.AtEndOfStream) { return ""; }
+        next();
+        var buf = [], ch, line;
+        
+        switch (this.br) {
+        case "\r\n":
+            line = file.ReadLine();
+            break;
+        case "\n":
+        case "\r":
+            ch = file.Read(1);
+            while(ch !== this.br && !file.AtEndOfStream){
+                buf.push(ch);
+                ch = file.Read(1);
+            }
+            line = buf.join("");
+            break;
+        default:
+            throw new Error();
+        }
+        if (at === paths.length &&  file.AtEndOfStream) { this.AtEndOfStream = true; }
+        return line;
+    }
+    return {
+        AtEndOfStream: AtEndOfStream, 
+        br: br, 
+        Read: Read, 
+        ReadLine: ReadLine
+    };
 }
 
 // https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach
@@ -952,7 +946,6 @@ if ( !Array.prototype.forEach ) {
         }
     };
 }
-
 
 
 // parse options
@@ -1021,7 +1014,7 @@ for(; i < len; i++){
     } else if (arg === "-") {
         inputs.push("-");
     } else {
-        WScript.StdErr.WriteLine("");
+        error("file not found.");
     }
 }
 
