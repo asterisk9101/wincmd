@@ -747,9 +747,9 @@ function sed(opts, scripts, inputs) {
                 }
                 break;
             case "h": sed_state.hold = sed_state.pattern; break;
-            case "H": sed_state.pattern.forEach(function (x) { sed_state.hold.push(x); }); break;
+            case "H": sed_state.hold.push(sed_state.pattern.join(stream.br)); break;
             case "g": sed_state.pattern = sed_state.hold; break;
-            case "G": sed_state.hold.forEach(function (x) { sed_state.pattern.push(x); }); break;
+            case "G": sed_state.pattern.push(sed_state.hold.join(stream.br)); break;
             case "n": cmd_next(cmd); break;
             case "N": cmd_next(cmd); break;
             case "p": cmd_print(cmd); break;
@@ -972,32 +972,6 @@ function break_code(text) {
     }
     return buf.join("");
 }
-
-// https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach
-if ( !Array.prototype.forEach ) {
-    Array.prototype.forEach = function( callback, thisArg ) {
-        var T, k;
-        if ( this == null ) {
-            throw new Error( " this is null or not defined" );
-        }
-        var O = Object(this);
-        var len = O.length >>> 0; // Hack to convert O.length to a UInt32
-        if ( {}.toString.call(callback) != "[object Function]" ) {
-            throw new Error( callback + " is not a function" );
-        }
-        if ( thisArg ) { T = thisArg; }
-        k = 0;
-        while( k < len ) {
-            var kValue;
-            if ( k in O ) {
-                kValue = O[ k ];
-                callback.call( T, kValue, k, O );
-            }
-            k++;
-        }
-    };
-}
-
 
 // parse options
 var fso = WScript.CreateObject("Scripting.FileSystemObject");
