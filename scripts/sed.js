@@ -1026,6 +1026,9 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
         scripts.push(arg.ReadAll());
         arg.Close();
         break;
+    case "/ne":
+        opts.n = true;
+        // fall through
     case "/e":
     case "/expression":
         i++;
