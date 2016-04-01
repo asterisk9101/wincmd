@@ -530,8 +530,9 @@ function sed(opts, scripts, inputs) {
                     case "t": buf.push("\t"); break;
                     case "n": buf.push("\n"); break;
                     case "r": buf.push("\r"); break;
+                    case "\\": buf.push("\\"); break;
                     case delim: buf.push(delim); break;
-                    default: buf.push(" "); break;
+                    default: buf.push("\\" + ch); break;
                     }
                 } else {
                     buf.push(ch);
@@ -693,7 +694,7 @@ function sed(opts, scripts, inputs) {
             flags = cmd.args[2];
             path = cmd.args[3];
             
-            var text = sed_state.pattern.join(stream.br)
+            var text = sed_state.pattern.join(stream.br);
             if(regexp.test(text)){
                 text = text.replace(regexp, replacement);
                 success = true;
@@ -792,7 +793,7 @@ function sed(opts, scripts, inputs) {
                 sed_state.AtEndOfStream = stream.AtEndOfStream;
                 pc = stat_head;
                 while(pc && pc.cmd.name !== ""){
-                    if(pc.cmd.name === "{" || match(pc.addr)){
+                    if(pc.cmd.name === "{" || pc.cmd.name === "}" || match(pc.addr)){
                         command(pc);
                     }
                     pc = pc.next;
