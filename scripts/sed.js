@@ -717,7 +717,7 @@ function sed(opts, scripts, inputs) {
             for(i = 0, len = src.length; i < len; i++) {
                 text = text.replace(new RegExp(src.charAt(i), "g"), dest.charAt(i));
             }
-            sed_state.pattern = pattern.split(stream.br);
+            sed_state.pattern = text.split(stream.br);
         }
         function command(stat) {
             var cmd = stat.cmd, tmp;
