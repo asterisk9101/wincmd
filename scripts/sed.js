@@ -845,8 +845,7 @@ function sed(opts, scripts, inputs) {
         //WScript.StdOut.Write(files.Read(1));
     }
     */
-    
-    var list = parser(scripts.join("\r\n"));
+    var list = parser(scripts.join(opts.br));
     /* test parser
     var item = list;
     while(item.cmd.name !== "") {
