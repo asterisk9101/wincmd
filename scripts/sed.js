@@ -616,6 +616,8 @@ function sed(opts, scripts, inputs) {
         }
         function cmd_print(cmd){
             var text;
+            if (sed_state.pattern.length === 0) { return; }
+            
             switch(cmd.name){
             case "p": text = sed_state.pattern.join(stream.br); break;
             case "P": text = sed_state.pattern[0]; break;
@@ -788,6 +790,7 @@ function sed(opts, scripts, inputs) {
             return ret && addr.match(sed_state);
         }
         function run(strm) {
+            var str;
             stream = strm;
             while(!stream.AtEndOfStream){
                 sed_state.pattern = [stream.ReadLine()];
@@ -800,8 +803,9 @@ function sed(opts, scripts, inputs) {
                     }
                     pc = pc.next;
                 }
-                if(!opt.n && sed_state.pattern.join(stream.br)) {
-                    WScript.StdOut.Write(sed_state.pattern.join(stream.br) + stream.br);
+                str = sed_state.pattern.join(stream.br);
+                if(!opt.n && str) {
+                    WScript.StdOut.Write(str + stream.br);
                 }
                 if (append_text.length !== 0) {
                     WScript.StdOut.Write(append_text.join(stream.br) + stream.br);
