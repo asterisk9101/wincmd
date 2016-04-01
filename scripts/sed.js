@@ -623,6 +623,7 @@ function sed(opts, scripts, inputs) {
         }
         function cmd_next(cmd){
             var line;
+            if (stream.AtEndOfStream){ return ; }
             switch(cmd.name){
             case "n":
                 sed_state.pattern = [stream.ReadLine()];
@@ -860,66 +861,112 @@ function files_stream (paths, br_pattern) {
     var br = br_pattern || "\r\n";
     var file = null;
     var AtEndOfStream = false;
-    var at = 0;
+    var at = 0, ch;
+    var open = true;
     var fso = WScript.CreateObject("Scripting.FileSystemObject");
     
-    function next() {
-        // 現在開いているファイルが無いか、もしくは終端に達していた場合、次のファイルを開く。
-        if (file === null || file.AtEndOfStream) {
+    function echo(m) {
+        WScript.StdOut.WriteLine(m);
+    }
+    function alert(m) {
+        WScript.StdErr.WriteLine("files_stream: alert: " + m);
+    }
+    function error(m) {
+        throw new Error(12345, "files_stream", m);
+    }
+    function get_file() {
+        while (file === null || file.AtEndOfStream && at < paths.length) {
             try {
-                if (file) { file.Close(); }
+                if (file !== null) { file.Close(); }
                 file = paths[at] === "-" ? WScript.StdIn : fso.OpenTextFile(paths[at]);
             } catch(e) {
-                WScript.StdErr.WriteLine("sed: file open fail. " + paths[at]);
+                alert("file open fail. " + paths[at]);
             }
             at++;
         }
-    }
-    function Read(n) {
-        // 現在開いているファイルから n 文字読み取る。
-        // 第一引数 n として、ファイルから読み取る文字数 (Number) を受け取る。
-        // 戻り値として、読み取った文字列 (String) を返す。
-        var str;
-        if (this.AtEndOfStream) { return ""; }
-        next();
-        
-        str = file.Read(n);
-        
-        if (at === paths.length &&  file.AtEndOfStream) { this.AtEndOfStream = true; }
-        return str;
-    }
-    function ReadLine() {
-        // 現在開いているファイルから 1 行読み取る。
-        // 戻り値として、読み取った文字列 (String) を返す。
-        if (this.AtEndOfStream) { return ""; }
-        next();
-        var buf = [], ch, line;
-        
-        switch (this.br) {
-        case "\r\n":
-            line = file.ReadLine();
-            break;
-        case "\n":
-        case "\r":
-            ch = file.Read(1);
-            while(ch !== this.br && !file.AtEndOfStream){
-                buf.push(ch);
-                ch = file.Read(1);
-            }
-            line = buf.join("");
-            break;
-        default:
-            throw new Error();
+        if (file === null) {
+            error("all files open fail.");
         }
-        if (at === paths.length &&  file.AtEndOfStream) { this.AtEndOfStream = true; }
-        return line;
+    }
+    function next_char() {
+        if (file.AtEndOfStream) { get_file(); }
+        if (file.AtEndOfStream) { return ""; }
+        ch = file.Read(1);
+        return ch;
+    }
+    function read(n) {
+        var buf = [], i;
+        for(i = 0; i < n; i++) {
+            buf.push(ch);
+            next_char()
+        }
+        
+        if (file.AtEndOfStream && at >= paths.length) {
+            this.AtEndOfStream = true;
+        }
+        return buf.join("");
+    }
+    function readline() {
+        var buf;
+        if (this.br === "\r\n") {
+            get_file();
+            buf = file.ReadLine();
+        } else {
+            buf = [];
+            next_char();
+            while(ch !== "") {
+                if (ch === this.br) { break; }
+                buf.push(ch);
+                next_char();
+            }
+            buf = buf.join("");
+        }
+        this.AtEndOfStream = file.AtEndOfStream && at >= paths.length
+        return buf;
+    }
+    function Close() {
+        file.Close();
+        open = false;
+    }
+    
+    br = br_pattern || "\r\n";
+    file = null;
+    at = 0;
+    AtEndOfStream = true;
+    
+    if (paths.length !== 0) {
+        get_file(); // set file
+        AtEndOfStream = file ? file.AtEndOfStream : false;
     }
     return {
         AtEndOfStream: AtEndOfStream, 
         br: br, 
-        Read: Read, 
-        ReadLine: ReadLine
+        Read: read, 
+        ReadLine: readline,
+        Close: Close
     };
+}
+function break_code(text) {
+    // 改行コードをパースする
+    var buf = [], i, len, ch;
+    if (text.length === 0) { error("invalid break code."); }
+    for(i = 0, len = text.length; i < len; i++){
+        ch = text.charAt(i);
+        if (ch === "\\") {
+            i++;
+            if (i >= text.length) { error("invalid break code."); }
+            ch = text.charAt(i);
+            switch(ch){
+            case "n": buf.push("\n"); break;
+            case "r": buf.push("\r"); break;
+            case "t": buf.push("\t"); break;
+            case "\\": buf.push("\\"); break;
+            }
+        } else {
+            buf.push(ch);
+        }
+    }
+    return buf.join("");
 }
 
 // https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array/forEach
@@ -968,7 +1015,7 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
     case "/break":
         i++;
         arg = get_next_arg(i);
-        opts.br = arg;
+        opts.br = break_code(arg);
         break;
     case "/f":
     case "/file":
