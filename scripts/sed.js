@@ -73,7 +73,8 @@ function get_next_arg(index) {
     if (index < WScript.Arguments.length) {
         return WScript.Arguments(index);
     } else {
-        throw new Error("sed: arguments error");
+        WScript.StdErr.WriteLine("sed: arguments error");
+        WScript.Quit(1);
     }
 }
 function echo(m) { WScript.Echo(m); } // print debug
@@ -230,8 +231,8 @@ function sed(opts, scripts, inputs) {
         var at, ch;
         
         function error(m) {
-            WScript.StdErr.WriteLine("sed: parse error: " + m + " at " + at + " '" + ch + "'");
-            throw new Error(12345, "sed", m);
+            WScript.StdErr.WriteLine("sed: parse error: " + m + " at " + at);
+            WScript.Quit(1);
         }
         function next() {
             at++;
@@ -410,11 +411,11 @@ function sed(opts, scripts, inputs) {
                 
                 // check length
                 if (args[0].length !== args[1].length) {
-                    error("");
+                    error("strings for 'y' command are different lengths.");
                 }
                 break;
             default:
-                error("unknown command.");
+                error("unknown command: '" + name + "'");
             }
             return new Command(name, args);
         }
@@ -597,7 +598,7 @@ function sed(opts, scripts, inputs) {
         
         function error(m) {
             WScript.StdErr.WriteLine("sed: runtime error: " + m);
-            throw new Error();
+            WScript.Quit(1);
         }
         function cmd_text(cmd){
             var text = cmd.args[0];
@@ -867,7 +868,8 @@ function files_stream (paths, br_pattern) {
         WScript.StdErr.WriteLine("files_stream: alert: " + m);
     }
     function error(m) {
-        throw new Error(12345, "files_stream", m);
+        WScript.StdErr.WriteLine(m);
+        WScript.Quit(1);
     }
     function get_file() {
         while (file === null || file.AtEndOfStream && at < paths.length) {
