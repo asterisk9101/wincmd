@@ -21,8 +21,9 @@
 //     /f script-file, /file script-file
 //         実行するコマンドとして script-file の内容を追加する。
 // 
-//     /b, /break
-//         改行コードを指定する(\r, \n, \r\n)。
+//     /b br, /break br
+//         改行コードとして br を指定する。指定できる値は \r, \n, \r\n のいずれか。
+//         既定値は \r\n (Windows 標準の改行コード)。
 // 
 //     /?, /help
 //         ヘルプを表示して終了する
