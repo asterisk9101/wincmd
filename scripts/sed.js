@@ -470,7 +470,7 @@ function sed(opts, scripts, inputs) {
             // string without break
             var buf = [];
             while(ch !== "") {
-                if (ch === "\r" || ch === "\n" || ch === ";" || ch === "}") { break; }
+                if (ch === "\r" || ch === "\n" || ch === "") { break; }
                 buf.push(ch);
                 next();
             }
@@ -724,14 +724,8 @@ function sed(opts, scripts, inputs) {
             switch(cmd.name) {
             case "#": 
             case ":": break;
-            case "}": 
-                //echo("pop")
-                addr_stack.pop();
-                break;
-            case "{": 
-                //echo("push")
-                addr_stack.push(stat.addr);
-                break;
+            case "}": addr_stack.pop(); break;
+            case "{": addr_stack.push(stat.addr); break;
             case "=": WScript.StdOut.WriteLine(sed_state.line_num); break;
             case "d": 
                 sed_state.pattern = [];
@@ -813,10 +807,6 @@ function sed(opts, scripts, inputs) {
                 }
             }
         }
-        /*
-            Ç†Ç∆Ç≈Ç‚ÇÈ
-            parser ÇÃ ; Ç aic ÇÃèIí[Ç…ÇµÇ»Ç¢
-        */
         
         // init lables
         pc = stat_head;
