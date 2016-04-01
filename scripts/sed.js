@@ -1007,17 +1007,20 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
     if (arg === "--") { break; }
     if (arg.charAt(0) !== "/") { break;}
     switch (arg) {
-    case "/n":
-    case "/quiet":
-    case "/silent":
-        opts.n = true;
-        break;
     case "/b":
     case "/break":
         i++;
         arg = get_next_arg(i);
         opts.br = break_code(arg);
         break;
+    case "/n":
+    case "/quiet":
+    case "/silent":
+        opts.n = true;
+        break;
+    case "/nf":
+        opts.n = true;
+        // fall through
     case "/f":
     case "/file":
         i++;
