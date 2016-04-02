@@ -364,10 +364,8 @@ function sed(opts, scripts, inputs) {
             case "b": 
             case "t": 
             case "T": 
-                white();
-                tmp = string_line();
-                if(!tmp) { error("missing label"); }
-                args.push(tmp);
+                while(ch === " " || ch === "\t") { next(); }
+                args.push(string_line());
                 break;
             case "r": 
             case "R": 
@@ -673,15 +671,10 @@ function sed(opts, scripts, inputs) {
             case "T": bool = !success; break;
             }
             
-            // ラベル名は省略可能
-            // 省略した場合はコマンド列の末尾へ
-            if (cmd.args.length > 1) {
-                label = cmd.args[0];
-            }
-            
+            label = cmd.args[0];
             addr_stack = [];
             if (bool) {
-                pc = label ? labels[label] : stat_tail;
+                pc = label === "" ? stat_tail : labels[label];
             }
             if (!pc) {
                 error("missing branch");
@@ -807,7 +800,9 @@ function sed(opts, scripts, inputs) {
                 sed_state.AtEndOfStream = stream.AtEndOfStream;
                 pc = stat_head;
                 while(pc && pc.cmd.name !== ""){
-                    if(pc.cmd.name === "{" || pc.cmd.name === "}" || match(pc.addr)){
+                    if(match(pc.addr)){
+                        command(pc);
+                    } else if (pc.cmd.name === "}" && addr_stack.length){
                         command(pc);
                     }
                     pc = pc.next;
@@ -827,7 +822,7 @@ function sed(opts, scripts, inputs) {
         pc = stat_head;
         while(pc.cmd.name !== ""){
             if(pc.cmd.name === ":") {
-                labels.push(pc);
+                labels[pc.cmd.args[0]] = pc;
             }
             pc = pc.next;
         }
