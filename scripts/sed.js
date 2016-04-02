@@ -697,8 +697,8 @@ function sed(opts, scripts, inputs) {
             
             var text = sed_state.pattern.join(stream.br);
             if(regexp.test(text)){
-                text = text.replace(regexp, replacement);
                 success = true;
+                text = text.replace(regexp, replacement);
                 if (flags.indexOf("w") > -1) {
                     file = fso.OpenTextFile(path, 2, true);
                     file.Write(text + stream.br);
@@ -708,6 +708,8 @@ function sed(opts, scripts, inputs) {
                     WScript.StdOut.Write(text + stream.br);
                 }
                 sed_state.pattern = text.split(stream.br);
+            } else {
+                success = false;
             }
         }
         function cmd_y(cmd) {
