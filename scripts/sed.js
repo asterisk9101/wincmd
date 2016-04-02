@@ -958,8 +958,7 @@ function break_code(text) {
             switch(ch){
             case "n": buf.push("\n"); break;
             case "r": buf.push("\r"); break;
-            case "t": buf.push("\t"); break;
-            case "\\": buf.push("\\"); break;
+            default: error("unknown break code.");
             }
         } else {
             buf.push(ch);
