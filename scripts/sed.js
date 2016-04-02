@@ -696,6 +696,17 @@ function sed(opts, scripts, inputs) {
             path = cmd.args[3];
             
             var text = sed_state.pattern.join(stream.br);
+            
+            // JScript bug?
+            // restruct regexp instance.
+            /*
+            var flag = "";
+            if (regexp.ignoreCase) { flag += "i"; }
+            if (regexp.global) { flag += "g"; }
+            if (regexp.multiline) { flag += "m"; }
+            regexp = new RegExp(regexp.source, flag);
+            */
+            regexp.test("\0"); // dry run for JScript bug...
             if(regexp.test(text)){
                 success = true;
                 text = text.replace(regexp, replacement);
