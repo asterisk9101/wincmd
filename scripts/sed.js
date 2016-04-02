@@ -171,7 +171,7 @@ function sed(opts, scripts, inputs) {
             return this.re.test(sed_state.pattern);
         },
         toString: function () {
-            return "(" + this.type + " " + this.re.toString() + ")";
+            return "(" + this.type + " " + this.re.source + ")";
         }
     };
     function TailAddress() {
@@ -221,7 +221,7 @@ function sed(opts, scripts, inputs) {
             buf.push("(" + this.name);
             for(i = 0, len = this.args.length; i < len; i++) {
                 buf.push(" ");
-                buf.push(this.args.toString());
+                buf.push(this.args[i].toString());
             }
             buf.push(")");
             return buf.join("");
