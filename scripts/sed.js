@@ -727,7 +727,7 @@ function sed(opts, scripts, inputs) {
             }
             sed_state.pattern = text.split(stream.br);
         }
-        function command(stat) {
+        function exec(stat) {
             var cmd = stat.cmd, tmp;
             switch(cmd.name) {
             case "#": 
@@ -801,9 +801,9 @@ function sed(opts, scripts, inputs) {
                 pc = stat_head;
                 while(pc && pc.cmd.name !== ""){
                     if(match(pc.addr)){
-                        command(pc);
+                        exec(pc);
                     } else if (pc.cmd.name === "}" && addr_stack.length){
-                        command(pc);
+                        exec(pc);
                     }
                     pc = pc.next;
                 }
