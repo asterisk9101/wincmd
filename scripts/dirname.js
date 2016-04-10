@@ -86,13 +86,13 @@ for(; i < len; i++) {
 }
 
 // exec
-var dir;
+var dir
 for(i = 0, len = inputs.length; i < len; i++) {
     dir = inputs[i].split("\\");
-    if (dir.pop() === "") { dir.pop();}
-    if (dir.length === 0) {
+    dir.pop();
+    if (dir.length <= 1) {
         WScript.StdOut.WriteLine(".");
     } else {
-        WScript.StdOut.WriteLine(dir.join("\\"));
+        WScript.StdOut.WriteLine(dir.join("\\"))
     }
 }
