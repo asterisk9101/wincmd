@@ -16,9 +16,8 @@
 //     /v, /version
 //         バージョン情報を出力して終了する
 // 
-// 
 // 一般的な dirname との差異
-//     特になし
+//     出力の末尾に \ は付かない。
 
 // [Version]
 // dirname.js version 0.1
