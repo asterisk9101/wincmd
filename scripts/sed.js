@@ -590,6 +590,7 @@ function sed(opts, scripts, inputs) {
         
         var stream = null;
         var success = false;
+        var next_cycle = false;
         var addr_stack = [];
         var append_text = [];
         var fso = WScript.CreateObject("Scripting.FileSystemObject");
@@ -736,16 +737,14 @@ function sed(opts, scripts, inputs) {
             case "{": addr_stack.push(stat.addr); break;
             case "=": WScript.StdOut.WriteLine(sed_state.line_num); break;
             case "d": 
-                cmd_next({name:"n"});
-                pc = stat_head;
+                next_cycle = true;
                 break;
             case "D": 
                 if (sed_state.pattern.length > 1) {
                     sed_state.pattern.shift();
                     pc = stat_head;
                 } else {
-                    cmd_next({name:"n"});
-                    pc = stat_head;
+                    next_cycle = true;
                 }
                 break;
             case "h": sed_state.hold = sed_state.pattern; break;
@@ -794,7 +793,8 @@ function sed(opts, scripts, inputs) {
         function run(strm) {
             var str;
             stream = strm;
-            while(!stream.AtEndOfStream){
+            cycle: while(!stream.AtEndOfStream){
+                next_cycle = false;
                 sed_state.pattern = [stream.ReadLine()];
                 sed_state.line_num += 1;
                 sed_state.AtEndOfStream = stream.AtEndOfStream;
@@ -805,6 +805,7 @@ function sed(opts, scripts, inputs) {
                     } else if (pc.cmd.name === "}" && addr_stack.length){
                         exec(pc);
                     }
+                    if (next_cycle) { continue cycle; }
                     pc = pc.next;
                 }
                 str = sed_state.pattern.join(stream.br);
