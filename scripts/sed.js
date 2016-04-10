@@ -736,16 +736,16 @@ function sed(opts, scripts, inputs) {
             case "{": addr_stack.push(stat.addr); break;
             case "=": WScript.StdOut.WriteLine(sed_state.line_num); break;
             case "d": 
-                sed_state.pattern = [];
-                pc = stat_tail;
+                cmd_next({name:"n"});
+                pc = stat_head;
                 break;
             case "D": 
                 if (sed_state.pattern.length > 1) {
                     sed_state.pattern.shift();
                     pc = stat_head;
                 } else {
-                    sed_state.pattern = [];
-                    pc = stat_tail;
+                    cmd_next({name:"n"});
+                    pc = stat_head;
                 }
                 break;
             case "h": sed_state.hold = sed_state.pattern; break;
