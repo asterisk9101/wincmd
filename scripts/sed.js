@@ -808,7 +808,7 @@ function sed(opts, scripts, inputs) {
                     pc = pc.next;
                 }
                 str = sed_state.pattern.join(stream.br);
-                if(!opt.n && str) {
+                if(!opt.n) {
                     WScript.StdOut.Write(str + stream.br);
                 }
                 if (append_text.length !== 0) {
