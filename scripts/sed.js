@@ -457,7 +457,7 @@ function sed(opts, scripts, inputs) {
                 if (ch === "" || ch === "\r" || ch === "\n") { error(""); }
                 if (ch === "\\") {
                     next();
-                    buf.push(escape_break());
+                    buf.push(escape());
                 } else {
                     buf.push(ch);
                     next();
@@ -482,7 +482,7 @@ function sed(opts, scripts, inputs) {
                 if (ch === "\r" || ch === "\n") { break; }
                 if (ch === "\\") {
                     next();
-                    buf.push(escape_break());
+                    buf.push(escape());
                 } else {
                     buf.push(ch);
                     next();
@@ -540,21 +540,34 @@ function sed(opts, scripts, inputs) {
             }
             return new RegExp(buf.join(""));
         }
-        function escape_break() {
+        function escape() {
             var buf = [];
-            if (ch === "\\") {
-                buf.push("\\");
-                next();
-            } else if (ch === "\r") {
-                buf.push(ch);
-                next();
+            switch(ch) {
+            case "\\":
+                buf.push(ch); next();
+                break;
+            case "\r":
+                buf.push(ch); next();
                 if (ch === "\n") {
                     buf.push(ch);
                     next();
                 }
-            } else if (ch === "\n") {
-                buf.push(ch);
-                next();
+                break;
+            case "\n":
+                buf.push(ch); next();
+                break;
+            case "t":
+                buf.push("\t"); next();
+                break;
+            case "n":
+                buf.push("\n"); next();
+                break;
+            case "r":
+                buf.push("\r"); next();
+                break;
+            default: 
+                buf.push(ch); next();
+                break;
             }
             return buf.join("");
         }
