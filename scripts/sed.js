@@ -800,9 +800,7 @@ function sed(opts, scripts, inputs) {
                 sed_state.AtEndOfStream = stream.AtEndOfStream;
                 pc = stat_head;
                 while(pc && pc.cmd.name !== ""){
-                    if(match(pc.addr)){
-                        exec(pc);
-                    } else if (pc.cmd.name === "}" && addr_stack.length){
+                    if(match(pc.addr) || pc.cmd.name === "{" || pc.cmd.name === "}"){
                         exec(pc);
                     }
                     if (next_cycle) { continue cycle; }
