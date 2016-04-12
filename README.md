@@ -29,7 +29,9 @@ set PATH=C:\wincmd\bin;%PATH%
 - sed
 - wc
 - which
-- mustache 
+- mustache
+- dirname
+- basename
 - each(簡易xargs)
 - cat(type)
 - ls(dir /b)
