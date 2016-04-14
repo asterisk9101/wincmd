@@ -888,7 +888,7 @@ function files_stream (paths, br_pattern) {
         WScript.StdErr.WriteLine("files_stream: alert: " + m);
     }
     function error(m) {
-        WScript.StdErr.WriteLine(m);
+        WScript.StdErr.WriteLine("files_stream: error: " + m);
         WScript.Quit(1);
     }
     function get_file() {
