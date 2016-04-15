@@ -538,7 +538,7 @@ function sed(opts, scripts, inputs) {
                 }
                 next();
             }
-            return new RegExp(buf.join(""));
+            return new RegExp(buf.join("").replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&"));
         }
         function escape() {
             var buf = [];
