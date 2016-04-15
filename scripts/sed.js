@@ -529,7 +529,7 @@ function sed(opts, scripts, inputs) {
                     case "t": buf.push("\t"); break;
                     case "n": buf.push("\n"); break;
                     case "r": buf.push("\r"); break;
-                    case "\\": buf.push("\\"); break;
+                    case "\\": buf.push("\\\\"); break;
                     case delim: buf.push(delim); break;
                     default: buf.push("\\" + ch); break;
                     }
