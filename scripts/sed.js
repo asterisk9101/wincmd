@@ -730,7 +730,7 @@ function sed(opts, scripts, inputs) {
                 success = true;
                 text = text.replace(regexp, replacement);
                 if (flags.indexOf("w") > -1) {
-                    file = fso.OpenTextFile(path, 2, true);
+                    file = fso.OpenTextFile(path, 8, true);
                     file.Write(text + stream.br);
                     file.Close();
                 }
