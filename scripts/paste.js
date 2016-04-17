@@ -72,9 +72,7 @@ function open(path) {
 }
 
 // parse options
-var fso = WScript.CreateObject("Scripting.FileSystemObject");
 var arg, i, len, serial, delim, file = [];
-
 serial = false;
 delim = "\t";
 
@@ -115,7 +113,6 @@ for(; i < WScript.Arguments.length; i++) {
 }
 
 // exec
-var fso = WScript.CreateObject("Scripting.FileSystemObject");
 var fp, text, br = "\r\n";
 if (serial) {
     for(i = 0, len = file.length; i < len; i++) {
@@ -142,4 +139,7 @@ if (serial) {
             WScript.StdOut.Write(i === fp.length - 1 ? br : delim);
         }
     }
+}
+for(i = 0, len = fp.length; i < len; i++){
+    fp[i].Close();
 }
