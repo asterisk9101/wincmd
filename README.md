@@ -32,6 +32,7 @@ set PATH=C:\wincmd\bin;%PATH%
 - mustache
 - dirname
 - basename
+- xargs
 - each(簡易xargs)
 - cat(type)
 - ls(dir /b)
@@ -39,6 +40,7 @@ set PATH=C:\wincmd\bin;%PATH%
 - ps(tasklist)
 - pwd(cd)
 - grep(findstr)
+- echo(外部コマンド化)
 - init(wincmd\binをPATHに追加する)
 - rendate(ファイル名に最終更新日付yyyymmddを付与する)
 - mkdate(日付を生成して標準出力に流す)
@@ -52,5 +54,4 @@ set PATH=C:\wincmd\bin;%PATH%
 - sort
 - grep
 - find
-- xargs
 - make
