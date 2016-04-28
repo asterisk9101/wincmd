@@ -66,10 +66,15 @@ function echo(m) {
     WScript.Echo(m);
 }
 
-function xargs(opts, command){
-    function exec(command, cmdline){
-        var line = "cmd /c " + command + cmdline.join(" ");
-        var exec = shell.exec(line);
+function xargs(opts, cmd){
+    function exec(opts, cmd, argstr){
+        var exec, line = "cmd /c ";
+        if (opts.I) {
+            line += cmd.split(opts.I).join(argstr);
+        } else {
+            line += cmd + " " + argstr;
+        }
+        exec = shell.exec(line);
         while(!exec.stdout.AtEndOfStream){
             WScript.StdOut.WriteLine(exec.StdOut.ReadLine());
         }
@@ -78,27 +83,27 @@ function xargs(opts, command){
         }
     }
     var shell = new ActiveXObject("WScript.Shell");
-    var stdin = WScript.StdIn;
     var CMDLINE_MAX_LENGTH = 8100;
     var MAX_ARGS = opts.max_args || Number.POSITIVE_INFINITY;
-    var cmdline, arg, length, exec;
+    var args, arg, length;
     
-    if (stdin.AtEndOfStream) { return; }
-    command = (command || "echo") + " ";
-    arg = stdin.ReadLine();
-    length = arg.length;
-    cmdline = [arg];
-    while(!stdin.AtEndOfStream) {
-        arg = stdin.ReadLine();
-        if (cmdline.length >= MAX_ARGS || arg.length + length >= CMDLINE_MAX_LENGTH) {
-            exec(command, cmdline);
-            length = 0;
-            cmdline = [];
+    if (WScript.StdIn.AtEndOfStream) { return; }
+    cmd = cmd !== "" ? cmd : "echo";
+    args = [];
+    length = 0;
+    while(!WScript.StdIn.AtEndOfStream) {
+        arg = WScript.StdIn.ReadLine();
+        length += arg.length + 1;
+        args = [arg];
+        while(!WScript.StdIn.AtEndOfStream){
+            if (length >= CMDLINE_MAX_LENGTH) { break; }
+            if (args.length >= MAX_ARGS) { break; }
+            arg = WScript.StdIn.ReadLine();
+            length += arg.length + 1;
+            args.push(arg);
         }
-        length += arg.length;
-        cmdline.push(arg);
+        exec(opts, cmd, args.join(" "));
     }
-    exec(command, cmdline);
 }
 
 // parse options
@@ -109,10 +114,16 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
     if (arg === "--") { break; }
     if (arg.charAt(0) !== "/") { break;}
     switch (arg) {
+    case "/I":
+        i++;
+        opts.I = get_next_arg(i);
+        opts.max_args = 1;
+        break;
     case "/n":
     case "/max_args":
         i++;
         opts.max_args = +get_next_arg(i);
+        delete opts.I;
         break;
     case "/?":
     case "/help":
