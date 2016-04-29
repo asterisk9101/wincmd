@@ -34,7 +34,7 @@ function error(m) {
     WScript.StdErr.WriteLine(m);
     WScript.Quit(1);
 };
-function worning(m) {
+function warning(m) {
     WScript.StdErr.WriteLine(m);
 }
 function view(label) {
