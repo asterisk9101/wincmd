@@ -68,13 +68,14 @@ function echo(m) {
 
 function xargs(opts, cmd){
     function exec(opts, cmd, argstr){
-        var exec, line = "cmd /c ";
+        var exec, proc = "cmd /c ";
         if (opts.I) {
-            line += cmd.split(opts.I).join(argstr);
+            cmd = cmd.split(opts.I).join(argstr);
         } else {
-            line += cmd + " " + argstr;
+            cmd = cmd + " " + argstr;
         }
-        exec = shell.exec(line);
+        
+        exec = shell.exec(proc + cmd);
         while(!exec.stdout.AtEndOfStream){
             WScript.StdOut.WriteLine(exec.StdOut.ReadLine());
         }
