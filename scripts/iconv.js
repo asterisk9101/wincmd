@@ -33,6 +33,7 @@
 
 // [Version]
 // iconv.js version 0.1a
+var prog_name = "iconv";
 
 function error(m) {
     WScript.StdErr.WriteLine(m);
@@ -59,7 +60,7 @@ function get_next_arg(index) {
     if (index < WScript.Arguments.length) {
         return WScript.Arguments(index);
     } else {
-        WScript.StdErr.WriteLine("iconv: arguments error");
+        WScript.StdErr.WriteLine(prog_name + ": arguments error");
         WScript.Quit(1);
     }
 }
@@ -155,7 +156,7 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
         view("Version");
         WScript.Quit(0);
     default:
-        error("cat: invalid arguments. '" + arg + "'")
+        error(prog_name + ": invalid arguments. '" + arg + "'")
         break;
     }
 }
