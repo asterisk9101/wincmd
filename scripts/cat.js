@@ -70,7 +70,7 @@ function cat(opts, files){
     function read(opts, stream){
         var ch;
         if (opts.show_all) {
-            while(!stream.AtEndOfSteam){
+            while(!stream.AtEndOfStream){
                 ch = stream.Read(1);
                 ch = control_char(ch);
                 WScript.StdOut.Write(ch);
