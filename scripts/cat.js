@@ -30,7 +30,7 @@ function error(m) {
     WScript.Quit(1);
 };
 function view(label) {
-    var fso = new ActiveXObject("Scripting.FileSystemObject");
+    var fso = WScript.CreateObject("Scripting.FileSystemObject");
     var file = fso.OpenTextFile(WScript.ScriptFullName);
     var line;
     
@@ -80,7 +80,7 @@ function cat(opts, files){
         }
     }
     var file, i, len;
-    var fso = new ActiveXObject("Scripting.FileSystemObject");
+    var fso = WScript.CreateObject("Scripting.FileSystemObject");
     if (files.length === 0) {
         read(opts, WScript.StdIn)
     } else {
