@@ -19,38 +19,39 @@ set PATH=C:\wincmd\bin;%PATH%
 
 # 作った
 
-- head
-- tail
-- seq
-- tee
-- sleep
-- uniq
-- cut
-- sed
-- wc
-- which
-- mustache
-- dirname
 - basename
-- xargs
+- cat
+- cut
+- dirname
 - each(簡易xargs)
-- cat(type)
-- ls(dir /b)
+- grep(findstr)
+- head
+- iconv
+- init(wincmd\binをPATHに追加する)
 - ll(dir | findstr "^2")
+- ls(dir /b)
+- mkdate(日付を生成して標準出力に流す)
+- mustache
+- paste
 - ps(tasklist)
 - pwd(cd)
-- grep(findstr)
-- echo(外部コマンド化)
-- init(wincmd\binをPATHに追加する)
 - rendate(ファイル名に最終更新日付yyyymmddを付与する)
-- mkdate(日付を生成して標準出力に流す)
+- sed
+- seq
+- sleep(ping)
+- tail
+- tee
+- tr
+- uniq
+- wc
+- which
+- xargs
 
 # 作りかけ
 
 - awk(きっと永遠に作りかけ)
 
 # 作りたい
-- tr
 - sort
 - grep
 - find
