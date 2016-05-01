@@ -23,24 +23,30 @@
 // 
 //     /l, /list
 //         変換可能な文字コードのリストを表示して正常終了する。
-//         
+// 
 //     /?, /help
 //         オプションについて簡単に説明し正常終了する。
 // 
 //     /v, /version
 //         バージョン番号を表示して正常終了する。
 // 
+// 一般的な iconv との違い
+//     Shift_JIS 以外の変換は、標準入力・標準出力を使用することはできません。
+//     即ち iconv.js における /o はオプションではなく概ね必須の引数です。
+//     Shift_JIS への変換の場合に限り、標準出力を使用することができます。
+// 
 
 // [Version]
 // iconv.js version 0.1a
+
 var prog_name = "iconv";
 
 function error(m) {
-    WScript.StdErr.WriteLine(m);
+    WScript.StdErr.WriteLine(prog_name + ": " + m);
     WScript.Quit(1);
 };
 function view(label) {
-    var fso = new ActiveXObject("Scripting.FileSystemObject");
+    var fso = WScript.CreateObject("Scripting.FileSystemObject");
     var file = fso.OpenTextFile(WScript.ScriptFullName);
     var line;
     
@@ -165,7 +171,7 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
 if (i < len) {
     file = WScript.Arguments(i);
 } else {
-    file = "-";
+    error("missing file.");
 }
 
 iconv(opts, file);
