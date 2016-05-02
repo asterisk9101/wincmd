@@ -7,16 +7,19 @@
 //     xargs [command [initial-arguments]]
 //     xargs [/version] [/help]
 // 
-// 
 // 説明
 //     xargs は、標準入力から空白や改行で区切られた一連の項目を読み込み、それを引き数にして、
 //     指定した command を実行する (デフォルトのコマンドは echo である)。 
 // 
 // OPTION
+//     /I REPLACE-STR
+//         xargs が実行するコマンドに対してユーザが引数（すなわち initial-arguments）を指定したとき
+//         その initial-arguments の中にある REPLACE-STR の部分全てを、標準入力から読み込んだ名前で
+//         置き換える。なお、空白は、クォートされていない場合も、入力される項目の区切りにはならない。
+//         区切り記号は改行だけになる。
+// 
 //     /n MAX-ARGS, /max-args MAX-ARGS
 //         1 コマンドラインにつき最大 MAX-ARGS 個の引き数を使用する。
-//         作成されたコマンドラインが、コマンドライン長の上限を 超過する場合は (-s オプション参照)、 max-args より少ない引き数が使用されることになる。
-//         ただし、 -x オプションが指定されているときは別で、その場合は xargs が終了する。
 // 
 //     /?, /help
 //         オプションについて簡単に説明し正常終了する。
@@ -145,7 +148,7 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
 for(; i < len; i++) {
     arg = WScript.Arguments(i);
     if (arg.indexOf(" ") > -1) {
-        arg = '"' + arg + '"';
+        arg = '"' + arg.split("\"").join("\\\"") + '"';
     }
     command.push(arg);
 }
