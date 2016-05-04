@@ -68,58 +68,29 @@ function get_next_arg(index) {
 function echo(m) {
     WScript.Echo(m);
 }
-
-function xargs(opts, init_args){
-    function blankQuote(str) {
-        return str.indexOf(" ") === -1 ? str : "\"" + str + "\"";
-    }
-    function exec(opts, init_args, args){
-        var exec, proc = "cmd /c ", cmdline;
-        
-        init_args = init_args.map(blankQuote);
-        
-        if (opts.I) {
-            cmdline = init_args.join(" ").split(opts.I).join(args.join(" "));
+// https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce
+if (!Array.prototype.reduce) {
+    Array.prototype.reduce = function reduce(accumulator){
+        if (this===null || this===undefined) throw new TypeError("Object is null or undefined");
+        var i = 0, l = this.length >> 0, curr;
+        if(typeof accumulator !== "function") {
+            // ES5 : "If IsCallable(callbackfn) is false, throw a TypeError exception."
+            throw new TypeError("First argument is not callable");
+        }
+        if(arguments.length < 2) {
+            if (l === 0) throw new TypeError("Array length is 0 and no second argument");
+            curr = this[0];
+            i = 1; // start accumulating at the second element
         } else {
-            cmdline = init_args.join(" ") + " " + args.join(" ");
+            curr = arguments[1];
         }
-        
-        if (opts.debug) {
-            WScript.StdOut.WriteLine(cmdline);
-        } else {
-            exec = shell.exec(proc + cmdline);
-            while(!exec.stdout.AtEndOfStream){
-                WScript.StdOut.WriteLine(exec.StdOut.ReadLine());
-            }
-            while(!exec.stderr.AtEndOfStream){
-                WScript.StdErr.WriteLine(exec.stderr.ReadLine())
-            }
+        while (i < l) {
+            if(i in this) curr = accumulator.call(undefined, curr, this[i], i, this);
+            ++i;
         }
-    }
-    var shell = WScript.CreateObject("WScript.Shell");
-    var CMDLINE_MAX_LENGTH = 8100;
-    var MAX_ARGS = opts.max_args || Number.POSITIVE_INFINITY;
-    var args, arg, length;
-    init_args = init_args.length === 0 ? ["echo"] : init_args;
-    
-    if (WScript.StdIn.AtEndOfStream) { return; }
-    args = [];
-    length = 0;
-    while(!WScript.StdIn.AtEndOfStream) {
-        arg = WScript.StdIn.ReadLine();
-        length += arg.length + 1;
-        args = [arg];
-        while(!WScript.StdIn.AtEndOfStream){
-            if (length >= CMDLINE_MAX_LENGTH) { break; }
-            if (args.length >= MAX_ARGS) { break; }
-            arg = WScript.StdIn.ReadLine();
-            length += arg.length + 1;
-            args.push(arg);
-        }
-        exec(opts, init_args, args);
-    }
+        return curr;
+    };
 }
-
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map
 if (!Array.prototype.map) {
     Array.prototype.map = function(callback, thisArg) {
@@ -142,6 +113,67 @@ if (!Array.prototype.map) {
         }
         return A;
     };
+}
+function xargs(opts, init_args){
+    function blankQuote(str) {
+        return str.indexOf(" ") === -1 ? str : "\"" + str + "\"";
+    }
+    function insertArgs(replace_str, init_args, arg){
+        var i, len, ret = [init_args[0]];
+        for(i = 1, len = init_args.length; i < len; i++){
+            ret.push(init_args[i].split(replace_str).join(arg));
+        }
+        return ret;
+    }
+    function constract_cmdline(opts, init_args, args) {
+        var cmdline;
+        var i, len;
+        if (opts.I && args.length === 1) {
+            cmdline = insertArgs(opts.I, init_args, args[0]);
+        } else {
+            cmdline = init_args.concat(args);
+        }
+        return cmdline.map(blankQuote).join(" ");
+    }
+    function exec(opts, init_args, args){
+        var shell = WScript.CreateObject("WScript.Shell");
+        var proc = "cmd /c ", exec;
+        var cmdline = constract_cmdline(opts, init_args, args);
+        
+        if (opts.debug) {
+            WScript.StdOut.WriteLine(cmdline);
+        } else {
+            exec = shell.exec(proc + cmdline);
+            while(!exec.stdout.AtEndOfStream){
+                WScript.StdOut.WriteLine(exec.StdOut.ReadLine());
+            }
+            while(!exec.stderr.AtEndOfStream){
+                WScript.StdErr.WriteLine(exec.stderr.ReadLine());
+            }
+        }
+    }
+    var MAX_CMDLINE_LENGTH = 8100;
+    var MAX_ARGS = opts.max_args || Number.POSITIVE_INFINITY;
+    var args, arg, length;
+    init_args = init_args.length === 0 ? ["echo"] : init_args;
+    
+    if (WScript.StdIn.AtEndOfStream) { return; }
+    args = [];
+    length = init_args.reduce(function (a, b) { return a.length + b.length + 1;});
+    while(!WScript.StdIn.AtEndOfStream) {
+        arg = WScript.StdIn.ReadLine();
+        length += arg.length + 1;
+        args = [arg];
+        while(!WScript.StdIn.AtEndOfStream){
+            if (opts.I) { break; }
+            if (length >= MAX_CMDLINE_LENGTH) { break; }
+            if (args.length >= MAX_ARGS) { break; }
+            arg = WScript.StdIn.ReadLine();
+            length += arg.length + 1;
+            args.push(arg);
+        }
+        exec(opts, init_args, args);
+    }
 }
 
 // parse options
