@@ -69,19 +69,25 @@ function echo(m) {
     WScript.Echo(m);
 }
 
-function xargs(opts, cmd){
-    function exec(opts, cmd, argstr){
-        var exec, proc = "cmd /c ";
+function xargs(opts, init_args){
+    function blankQuote(str) {
+        return str.indexOf(" ") === -1 ? str : "\"" + str + "\"";
+    }
+    function exec(opts, init_args, args){
+        var exec, proc = "cmd /c ", cmdline;
+        
+        init_args = init_args.map(blankQuote);
+        
         if (opts.I) {
-            cmd = cmd.split(opts.I).join(argstr);
+            cmdline = init_args.join(" ").split(opts.I).join(args.join(" "));
         } else {
-            cmd = cmd + " " + argstr;
+            cmdline = init_args.join(" ") + " " + args.join(" ");
         }
         
         if (opts.debug) {
-            WScript.StdOut.WriteLine(cmd);
+            WScript.StdOut.WriteLine(cmdline);
         } else {
-            exec = shell.exec(proc + cmd);
+            exec = shell.exec(proc + cmdline);
             while(!exec.stdout.AtEndOfStream){
                 WScript.StdOut.WriteLine(exec.StdOut.ReadLine());
             }
@@ -90,17 +96,17 @@ function xargs(opts, cmd){
             }
         }
     }
-    var shell = new ActiveXObject("WScript.Shell");
+    var shell = WScript.CreateObject("WScript.Shell");
     var CMDLINE_MAX_LENGTH = 8100;
     var MAX_ARGS = opts.max_args || Number.POSITIVE_INFINITY;
     var args, arg, length;
+    init_args = init_args.length === 0 ? ["echo"] : init_args;
     
     if (WScript.StdIn.AtEndOfStream) { return; }
-    cmd = cmd !== "" ? cmd : "echo";
     args = [];
     length = 0;
     while(!WScript.StdIn.AtEndOfStream) {
-        arg = '"' + WScript.StdIn.ReadLine() + '"';
+        arg = WScript.StdIn.ReadLine();
         length += arg.length + 1;
         args = [arg];
         while(!WScript.StdIn.AtEndOfStream){
@@ -110,12 +116,36 @@ function xargs(opts, cmd){
             length += arg.length + 1;
             args.push(arg);
         }
-        exec(opts, cmd, args.join(" "));
+        exec(opts, init_args, args);
     }
 }
 
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map
+if (!Array.prototype.map) {
+    Array.prototype.map = function(callback, thisArg) {
+        var T, A, k;
+        if (this == null) { throw new Error(' this is null or not defined'); }
+        var O = Object(this);
+        var len = O.length >>> 0;
+        if (typeof callback !== 'function') { throw new Error(callback + ' is not a function'); }
+        if (arguments.length > 1) { T = thisArg; }
+        A = new Array(len);
+        k = 0;
+        while (k < len) {
+            var kValue, mappedValue;
+            if (k in O) {
+                kValue = O[k];
+                mappedValue = callback.call(T, kValue, k, O);
+                A[k] = mappedValue;
+            }
+            k++;
+        }
+        return A;
+    };
+}
+
 // parse options
-var arg, i, len, opts = {}, command = [];
+var arg, i, len, opts = {}, init_args = [];
 for(i = 0, len = WScript.Arguments.length; i < len; i++) {
     arg = WScript.Arguments(i);
     if (arg === "//") { break; }
@@ -155,7 +185,7 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
 
 for(; i < len; i++) {
     arg = WScript.Arguments(i);
-    command.push(arg);
+    init_args.push(arg);
 }
 
-xargs(opts, command.join(" "));
+xargs(opts, init_args);
