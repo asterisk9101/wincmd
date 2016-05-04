@@ -100,7 +100,7 @@ function xargs(opts, cmd){
     args = [];
     length = 0;
     while(!WScript.StdIn.AtEndOfStream) {
-        arg = WScript.StdIn.ReadLine();
+        arg = '"' + WScript.StdIn.ReadLine() + '"';
         length += arg.length + 1;
         args = [arg];
         while(!WScript.StdIn.AtEndOfStream){
@@ -155,9 +155,6 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
 
 for(; i < len; i++) {
     arg = WScript.Arguments(i);
-    if (arg.indexOf(" ") > -1) {
-        arg = '"' + arg.split("\"").join("\\\"") + '"';
-    }
     command.push(arg);
 }
 
