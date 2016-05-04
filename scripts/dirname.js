@@ -1,33 +1,36 @@
 // [Usage]
 // 名前
-//     dirname - パス名からファイル名を切り出す
+//     dirname - パス名からディレクトリ名を切り出す
 // 
 // 文法
-//     dirname path 
-//     dirname {/help,/version}  
+//     dirname PATH...
+//     dirname [/?] [/help] [/v] [/version]
 // 
 // 説明
-//     dirname は ファイル名(filename) の最後のバックスラッシュで区切られた部分を除いた全てを表示する。
+//     dirname は ファイル名 PATH の最後のバックスラッシュで区切られた部分を除いた全てを表示する。
 // 
 // OPTION
+//     /f, /full
+//         ディレクトリ名をフルパスで出力する。
+// 
 //     /?, /help
 //         ヘルプを表示して終了する
 // 
 //     /v, /version
 //         バージョン情報を出力して終了する
 // 
-// 一般的な dirname との差異
-//     出力の末尾に \ は付かない。
 
 // [Version]
 // dirname.js version 0.1
 
+var prog_name = "dirname";
+
 function error(m) {
-    WScript.StdErr.WriteLine(m);
+    WScript.StdErr.WriteLine(prog_name + ": " + m);
     WScript.Quit(1);
 };
 function view(label) {
-    var fso = new ActiveXObject("Scripting.FileSystemObject");
+    var fso = WScript.CreateObject("Scripting.FileSystemObject");
     var file = fso.OpenTextFile(WScript.ScriptFullName);
     var line;
     
@@ -43,56 +46,69 @@ function view(label) {
         }
     }
 }
+function echo(m) {
+    WScript.Echo(m);
+}
 function get_next_arg(index) {
     if (index < WScript.Arguments.length) {
         return WScript.Arguments(index);
     } else {
-        WScript.StdErr.WriteLine("dirname: arguments error");
-        WScript.Quit(1);
+        error(prog_name + ": missing argument: " + WScript.Arguments(index - 1));
     }
 }
-function echo(m) { WScript.Echo(m); } // print debug
-
-
-// parse options
-var fso = WScript.CreateObject("Scripting.FileSystemObject");
-var arg, i, len, inputs = [];
-
-for(i = 0, len = WScript.Arguments.length; i < len; i++) {
-    arg = WScript.Arguments(i);
-    if (arg === "//") { break; }
-    if (arg === "--") { break; }
-    if (arg.charAt(0) !== "/") { break;}
-    switch (arg) {
-    case "/?":
-    case "/help":
-        view("Usage");
-        WScript.Quit(0);
-        break;
-    case "/v":
-    case "/version":
-        view("Version");
-        WScript.Quit(0);
-        break;
-    default:
-        error("dirname: invalid arguments. '" + arg + "'")
-        break;
+function get_opt(index, opts, files) {
+    var i, len, ch;
+    var arg = WScript.Arguments(index);
+    if (arg[0] !== "/") { files.push(arg); return index; } 
+    arg = arg.slice(1);
+    for(i = 0, len = arg.length; i < len; i++){
+        ch = arg[i];
+        switch(ch){
+        case "f": opts.full = true; break;
+        case "?": view("Usage"); WScript.Quit(0);
+        case "v": view("Version"); WScript.Quit(0);
+        default: error("invalid argument: " + arg);;
+        }
     }
+    return index;
 }
-
-// parse arguments
-for(; i < len; i++) {
-    inputs.push(WScript.Arguments(i));
+function parse_arguments(){
+    var i, len, arg, opts = {}, files = [];
+    for(i = 0, len = WScript.Arguments.length; i < len; i++){
+        arg = WScript.Arguments(i);
+        if (arg === "--" || arg === "//") { i++; break; }
+        switch(arg) {
+        case "/f":
+        case "/full":
+            opts.full = true;
+            break;
+        case "/help":
+            view("Usage");
+            WScript.Quit(0);
+        case "/version":
+            view("Version");
+            WScript.Quit(0);
+        default:
+            i = get_opt(i, opts, files);
+            break;
+        }
+    }
+    for(; i < len; i++){
+        arg = WScript.Arguments(i);
+        files.push();
+    }
+    return {opts: opts, files: files };
 }
+var args, opts, inputs;
+args = parse_arguments();
+opts = args.opts;
+inputs = args.files;
 
 // exec
-var dir
+var fso = WScript.CreateObject("Scripting.FileSystemObject");
+var dir;
 for(i = 0, len = inputs.length; i < len; i++) {
-    dir = inputs[i].split("\\");
-    dir.pop();
-    if (dir.length <= 1) {
-        WScript.StdOut.WriteLine(".");
-    } else {
-        WScript.StdOut.WriteLine(dir.join("\\"))
-    }
+    if (opts.full) { inputs[i] = fso.GetAbsolutePathName(inputs[i]); }
+    dir = fso.getParentFolderName(inputs[i])
+    WScript.StdOut.WriteLine(dir);
 }
