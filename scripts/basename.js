@@ -24,8 +24,10 @@
 // [Version]
 // basename.js version 0.1
 
+var prog_name = "basename";
+
 function error(m) {
-    WScript.StdErr.WriteLine(m);
+    WScript.StdErr.WriteLine(prog_name + ": " + m);
     WScript.Quit(1);
 };
 function view(label) {
@@ -45,58 +47,69 @@ function view(label) {
         }
     }
 }
+function echo(m) {
+    WScript.Echo(m);
+}
 function get_next_arg(index) {
     if (index < WScript.Arguments.length) {
         return WScript.Arguments(index);
     } else {
-        WScript.StdErr.WriteLine("basename: arguments error");
-        WScript.Quit(1);
+        error(prog_name + "missing argument: " + WScript.Arguments(index - 1));
     }
 }
-function echo(m) { WScript.Echo(m); } // print debug
-
+function get_opt(index, opts, files) {
+    var i, len, ch;
+    var arg = WScript.Arguments(index);
+    if (arg[0] !== "/") { files.push(arg); return index; } 
+    arg = arg.slice(1);
+    for(i = 0, len = arg.length; i < len; i++){
+        ch = arg[i];
+        switch(ch){
+        case "s": i++; opts.suffix = get_next_arg(i); break;
+        case "?": view("Usage"); WScript.Quit(0);
+        case "v": view("Version"); WScript.Quit(0);
+        default: error("invalid argument: " + arg);;
+        }
+    }
+    return index;
+}
+function parse_arguments(){
+    var i, len, arg, opts = {}, files = [];
+    for(i = 0, len = WScript.Arguments.length; i < len; i++){
+        arg = WScript.Arguments(i);
+        if (arg === "--" || arg === "//") { i++; break; }
+        switch(arg) {
+        case "/suffix":
+            i++;
+            opts.suffix = get_next_arg(i);
+            break;
+        case "/help":
+            view("Usage");
+            WScript.Quit(0);
+        case "/version":
+            view("Version");
+            WScript.Quit(0);
+        default:
+            i = get_opt(i, opts, files);
+            break;
+        }
+    }
+    for(; i < len; i++){
+        arg = WScript.Arguments(i);
+        files.push();
+    }
+    return {opts: opts, files: files };
+}
 
 // parse options
-var fso = WScript.CreateObject("Scripting.FileSystemObject");
-var arg, i, len, suffix, inputs = [];
-
-for(i = 0, len = WScript.Arguments.length; i < len; i++) {
-    arg = WScript.Arguments(i);
-    if (arg === "//") { break; }
-    if (arg === "--") { break; }
-    if (arg.charAt(0) !== "/") { break;}
-    switch (arg) {
-    case "/s":
-    case "/suffix":
-        i++;
-        suffix = get_next_arg(i);
-        break;
-    case "/?":
-    case "/help":
-        view("Usage");
-        WScript.Quit(0);
-        break;
-    case "/v":
-    case "/version":
-        view("Version");
-        WScript.Quit(0);
-        break;
-    default:
-        error("basename: invalid arguments. '" + arg + "'")
-        break;
-    }
-}
-
-// parse arguments
-for(; i < len; i++) {
-    inputs.push(WScript.Arguments(i));
-}
+var args = parse_arguments();
+var opts = args.opts;
+var inputs = args.files;
 
 // exec
-var list, name, re = new RegExp(suffix + "$");
+var fso = WScript.CreateObject("Scripting.FileSystemObject");
+var name, re = new RegExp(opts.suffix + "$");
 for(i = 0, len = inputs.length; i < len; i++) {
-    list = inputs[i].split("\\");
-    name = list.pop();
-    if (name === "") { name = list.pop(); }
+    name = fso.getFileName(inputs[i]);
     WScript.StdOut.WriteLine(name.replace(re, ""));
 }
