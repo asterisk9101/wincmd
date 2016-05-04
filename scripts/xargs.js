@@ -78,12 +78,16 @@ function xargs(opts, cmd){
             cmd = cmd + " " + argstr;
         }
         
-        exec = shell.exec(proc + cmd);
-        while(!exec.stdout.AtEndOfStream){
-            WScript.StdOut.WriteLine(exec.StdOut.ReadLine());
-        }
-        while(!exec.stderr.AtEndOfStream){
-            WScript.StdErr.WriteLine(exec.stderr.ReadLine())
+        if (opts.debug) {
+            WScript.StdOut.WriteLine(cmd);
+        } else {
+            exec = shell.exec(proc + cmd);
+            while(!exec.stdout.AtEndOfStream){
+                WScript.StdOut.WriteLine(exec.StdOut.ReadLine());
+            }
+            while(!exec.stderr.AtEndOfStream){
+                WScript.StdErr.WriteLine(exec.stderr.ReadLine())
+            }
         }
     }
     var shell = new ActiveXObject("WScript.Shell");
@@ -118,6 +122,10 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
     if (arg === "--") { break; }
     if (arg.charAt(0) !== "/") { break;}
     switch (arg) {
+    case "/whatif":
+    case "/debug":
+        opts.debug = true;
+        break;
     case "/I":
         i++;
         opts.I = get_next_arg(i);
