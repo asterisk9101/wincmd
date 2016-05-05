@@ -31,6 +31,7 @@
 '     %S    秒(00..60)
 '     %n    改行
 '     %t    水平タブ
+'     %\    業務でよく使うやつ
 '
 ' 例
 '     mkdate
@@ -44,6 +45,9 @@
 ' 
 '     mkdate /date 20160831 /time 123456 /locale "ja_JP" "+%B %Hの刻"
 '     => 葉月 午の刻 (年月日と時刻とロケールを同時に指定する)
+' 
+'     mkdate "+%\"
+'     => 20160203_123456（業務でよく使うやつ）
 
 ' [Version]
 ' mkdate version 0.1
@@ -171,6 +175,13 @@ class DateFormat
         do while ch <> ""
             if ch = "%" then
                 select case nextChar
+                case "\" call sb.Append_3(year(date_time))
+                         call sb.Append_3(month00(date_time, true))
+                         call sb.Append_3(day00(date_time, true))
+                         call sb.Append_3("_")
+                         call sb.Append_3(hour00(date_time, 24, true))
+                         call sb.Append_3(minute00(date_time, true))
+                         call sb.Append_3(second00(date_time, true))
                 case "F" call sb.Append_3(defaultFormat(date_time))
                 case "Y" call sb.Append_3(year(date_time))
                 case "y" call sb.Append_3(right(year(date_time), 2))
