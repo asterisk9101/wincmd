@@ -59,10 +59,10 @@ function get_next_arg(index) {
 function get_opt(index, opts, files) {
     var i, len, ch;
     var arg = WScript.Arguments(index);
-    if (arg[0] !== "/") { files.push(arg); return index; } 
+    if (arg.charAt(0) !== "/") { files.push(arg); return index; } 
     arg = arg.slice(1);
     for(i = 0, len = arg.length; i < len; i++){
-        ch = arg[i];
+        ch = arg.charAt(i);
         switch(ch){
         case "f": opts.full = true; break;
         case "?": view("Usage"); WScript.Quit(0);
