@@ -106,7 +106,9 @@ function cat(opts, files){
                 WScript.StdOut.Write(ch);
             }
         } else {
-            WScript.StdOut.Write(stream.ReadAll());
+            if (!stream.AtEndOfStream) {
+                WScript.StdOut.Write(stream.ReadAll());
+            }
         }
     }
     var file, i, len;

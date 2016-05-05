@@ -31,7 +31,7 @@ var prog_name = "puts";
 function error(m) {
     WScript.StdErr.WriteLine(prog_name + ": " + m);
     WScript.Quit(1);
-};
+}
 function view(label) {
     var fso = WScript.CreateObject("Scripting.FileSystemObject");
     var file = fso.OpenTextFile(WScript.ScriptFullName);
@@ -116,3 +116,4 @@ for(i = 0, len = strings.length; i < len; i++){
         WScript.StdOut.WriteLine(strings[i]);
     }
 }
+WScript.Quit(0);
