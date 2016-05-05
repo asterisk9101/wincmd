@@ -12,6 +12,12 @@
 //     指定した command を実行する (デフォルトのコマンドは echo である)。 
 // 
 // OPTION
+//     /!, /carefully
+//         コマンドの実行結果 (%ERRORLEVEL%) が 0 以外の場合は、後続のコマンドを実行せず終了します。
+// 
+//     /t, /whatif
+//         作成されたコマンドを表示します。コマンドは実行されません。
+// 
 //     /I REPLACE-STR
 //         xargs が実行するコマンドに対してユーザが引数（すなわち initial-arguments）を指定したとき
 //         その initial-arguments の中にある REPLACE-STR の部分全てを、標準入力から読み込んだ名前で
@@ -32,9 +38,10 @@
 
 // [Version]
 // xargs.js version 0.1a
+var prog_name = "xargs";
 
 function error(m) {
-    WScript.StdErr.WriteLine(m);
+    WScript.StdErr.WriteLine(prog_name + ": " + m);
     WScript.Quit(1);
 };
 function warning(m) {
@@ -144,11 +151,15 @@ function xargs(opts, init_args){
             WScript.StdOut.WriteLine(cmdline);
         } else {
             exec = shell.exec(proc + cmdline);
+            
             while(!exec.stdout.AtEndOfStream){
                 WScript.StdOut.WriteLine(exec.StdOut.ReadLine());
             }
             while(!exec.stderr.AtEndOfStream){
                 WScript.StdErr.WriteLine(exec.stderr.ReadLine());
+            }
+            if (opts.carefully && exec.exitcode !== 0){
+                error("interrupted: exit code(" + exec.exitcode + "): => " + cmdline);
             }
         }
     }
@@ -184,6 +195,11 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
     if (arg === "--") { break; }
     if (arg.charAt(0) !== "/") { break;}
     switch (arg) {
+    case "/!":
+    case "/carefully":
+        opts.carefully = true;
+        break;
+    case "/t":
     case "/whatif":
     case "/debug":
         opts.debug = true;
