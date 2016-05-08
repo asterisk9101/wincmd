@@ -312,7 +312,7 @@ function evalate(opts, expr) {
             }
             next("#"); // skip hash
             var ret = new Date(buf.join(""));
-            if (ret !== ret) {
+            if (ret === ret) {
                 return new Token("DATE", new Date(buf.join("")));
             } else {
                 // ret is NaN
