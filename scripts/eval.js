@@ -5,11 +5,12 @@
 // 文法
 //     eval [option]... EXPR...
 //     eval [/?] [/help] [/v] [/version]
+//     eval [/sample] [/function]
 // 
 // 説明
 //     eval は EXPR を評価した結果を出力します。
-//     また、結果が false (または null, NaN) の場合は、%ERRORLEVEL% に 1 を設定します。
-//     結果がそれ以外になった場合は、%ERRORLEVEL% に 0 を設定します。
+//     結果が true(または数値、文字列など) なった場合は、%ERRORLEVEL% に 0 を設定します。
+//     結果が false (または null, NaN) の場合は、%ERRORLEVEL% に 1 を設定します。
 //     式の評価自体に失敗した場合は、%ERRORLEVEL% に 2 以上の値を設定します。
 // 
 // OPTION
@@ -23,6 +24,9 @@
 //     /s, /silent
 //         結果を出力しません。
 // 
+//     /syntax
+//         EVAL コマンドの文法を表示して正常終了します。
+// 
 //     /sample
 //         EXPR のサンプルを表示して正常終了します。
 // 
@@ -30,12 +34,17 @@
 //         eval で使用できる関数の一覧を表示して正常終了します。
 // 
 //     /?, /help
-//         ヘルプを表示して正常終了します
+//         ヘルプを表示して正常終了します。
 // 
 //     /v, /version
-//         バージョン情報を出力して正常終了します
+//         バージョン情報を出力して正常終了します。
+// 
+// 一般的な eval コマンドとの差異
+//     一般的な eval コマンドは存在しません。
+//     Linux における expr , test または find コマンドに相当します。
+// 
 
-// [Sample]
+// [Syntax]
 // 数値
 //     小数を表現できます。
 //     eval 1.5
@@ -54,6 +63,10 @@
 //     eval 'sample string'
 //     => sample string
 // 
+//     文字列の結合ができます。
+//     eval 'abc' + 'def'
+//     => abcdef
+// 
 //     文字列が \ 記号を含む場合はエスケープが必要です。
 //     eval 'C:\\Windows\\'
 //     => C:\Windows\
@@ -61,10 +74,6 @@
 //     先頭に @ を付与することでエスケープ文字を ` 記号に変更することができます。
 //     eval @'C:\Windows\'
 //     => C:\Windows\
-// 
-//     文字列の結合ができます。
-//     eval 'abc' + 'def'
-//     => abcdef
 // 
 //     エスケープで表現できる文字は以下の通り。
 //     n     改行
@@ -74,61 +83,146 @@
 //     \     エスケープ文字自身(@ している場合は `)
 //     uFFFF 16進数2バイト文字(\u0022 のダブルクォートは頻繁に使うでしょう)
 // 
+// 真偽値
+//     true と false の2種類です。大文字・小文字は区別されます。
+// 
+// NULL
+//     null の 1 種類です。今のところ想定される使い方はありません。
+// 
+// 日付
+//     日付は # で括ります。計算に使用できますが、
+//     文字列の生成には向きません(mkdateコマンドを使ってください)。
+// 
+//     eval "#2016/5/8#"
+//     => Sun May 8 00:00:00 UTC+0900 2016
+// 
 // 演算
 //     演算子の優先順位を正しく評価できます。
 //     eval 1 + 2 * 3
 //     => 7
 // 
-//     除算記号を含む場合は、ダブルクォートで括る必要があります。
-//     eval "10 / 7"
-//     => 1.4285714285714286
+//     eval (1 + 2) * 3
+//     => 9
 // 
-//     論理演算が可能ですが、ダブルクォートで括る必要があります。
-//     eval "true && false"
-//     => false
+//     多くの演算子はコマンドプロンプトに解釈されてしまうので
+//     EXPR は基本的にダブルクォートで括ると良いでしょう。
 // 
-//     比較演算も可能です。ダブルクォートで括る必要があります。
-//     eval "100 > 10"
-//     => true
+//         除算演算子は、コマンドへのオプションとなってしまうためクォートが必要です。
+//         eval "10 / 7"
+//         => 1.4285714285714286
+// 
+//         論理演算子は、コマンドプロンプトの式になってしまうためクォートが必要です。
+//         eval "true && false"
+//         => false
+// 
+//         eval "false || true"
+//         => true
+// 
+//         比較演算子は、出力のリダイレクトになってしまうためクォートが必要です。
+//         eval "100 > 10"
+//         => true
 // 
 //     論理演算子は2種類(&, && または |, ||)ありますが、区別はありません。
-//     また両方ともショートサーキットです。
+//     また、両方ともショートサーキットです。
 //     eval "file('abc.txt') & size('abc.txt') > 1k"
 //     eval "file('abc.txt') && size('abc.txt') > 1k"
 //     => true(or false) 同じ結果になる。
-//                       また、file() が false の場合、
-//                       size() は評価されないのでエラーは発生しない。
+//                       また、'abc.txt' が存在しない場合 file() が false となるので、
+//                       size() は評価されない。よって size() でエラーは発生しない。
 // 
 //     (関数の詳細については /function オプションを参照してください)
 // 
+
+// [Sample]
+// 条件分岐の可読性を高める
+//     eval コマンドの関数を使用することで可読性の高い条件分岐を記述することができます。
+//     eval コマンドは式が true となるとき環境変数 %ERRORLEVEL% に 0 をセットします。
+// 
+//     :: 二つの条件を IF を入れ子にせず記述できる
+//     eval "file(@'file.txt') && size(@'file.txt') > 1k"
+//     IF %ERRORLEVEL% EQU 0 goto hogehoge
+// 
+//     :: OR 条件の複数条件にも対応できる
+//     eval "file(@'file.txt') || dir(@'folder')"
+//     IF %ERRORLEVEL% EQU 0 goto hogehoge
+// 
+//     :: 複雑な条件を複数行に分けて記述する場合(実行コストは高くなるでしょう)
+//     eval "%ERRORLEVEL% == 0 && file(@'file.txt')"
+//     eval "%ERRORLEVEL% == 0 && size(@'file.txt') > 1k"
+//     eval "%ERRORLEVEL% == 0 && adate(@'file.txt') > #2016/05/10#"
+//     eval "%ERRORLEVEL% == 0 && length(fullpath(@'file.txt')) <= 255"
+//     IF %ERRORLEVEL% EQU 0 goto hogehoge
+// 
+// 数値計算
+//     eval は複雑な数値計算にも対応できます(JScriptの計算精度に依存します)。
+// 
+//     eval "1 + 2 * 3 + (4 % 5) / pow(6, 7)"
+//     => 7.0000142889803385
+// 
+//     計算結果の取得は、これまで通り FOR を使ってください。
+// 
 // フィルタ
 //     eval は標準出力のフィルタとして利用できます。
+// 
 //     以下の例は、標準出力から読み込んだファイルとフォルダの一覧から
 //     1000バイト以上のファイルだけを出力します。
-// 
+//     $ は標準入力が代入される eval コマンド唯一の変数です。
+//
 //     dir /s /b | eval "file($) && size($) > 1k" /ifs
 // 
 
 // [Function]
 // ファイルシステム
 //     file(STRING)
-//         STRING で指定されたファイルが存在する場合は TRUE を返します。
+//         STRING で指定されたファイルが存在する場合は true を返します。
 // 
 //     dir(STRING)
-//         STRING で指定されたフォルダが存在する場合は TRUE を返します。
+//         STRING で指定されたフォルダが存在する場合は true を返します。
+// 
+//     empty(STRING)
+//         STRING で指定されたファイルまたはフォルダが空の場合に true を返します。
 // 
 //     size(STRING)
 //         STRING で指定されたファイルのサイズを返します。
+// 
+//     cdate(STRING)
+//         STRING で指定されたファイルの作成日時を返します。
+// 
+//     mdate(STRING)
+//         STRING で指定されたファイルの更新日時を返します。
+// 
+//     adate(STRING)
+//         STRING で指定されたファイルのアクセス日時を返します。
 // 
 // 文字列
 //     length(STRING)
 //         STRING で指定された文字列の長さを返します。
 // 
+//     to_n(STRING)
+//         STRING を数値に変換します。
+// 
+//     slice(STRING, NUMBER1[, NUMBER2])
+//         STRING を NUMBER1 文字目以降を切り出した STRING を返します。
+//         NUMBER2 を指定すると、NUBMER1 から NUMBER2 文字目を切り出した STRING を返します。
+// 
+//     indexof(STRING, STRING)
+// 
+//     upper(STRING)
+// 
+//     lower(STRING)
+// 
 // 数学
 //     sqrt(NUMBER)
 //         NUMBER の平方根を返します。
 // 
-// その他...
+//     pow(NUMBER, NUMBER)
+//     floor(NUMBER)
+//     ceil(NUMBER)
+//     sin(NUMBER)
+//     cos(NUMBER)
+//     tan(NUMBER)
+//     round(NUMBER)
+// 
 
 // [Version]
 // eval.js version 0.1
@@ -194,6 +288,7 @@ function parse_arguments(){
         case "/filter": opts.filter = true; break;
         case "/silent": opts.silent = true; break;
         case "/debug": opts.debug = true; break;
+        case "/syntax": view("Syntax"); WScript.Quit(0);
         case "/sample": view("Sample"); WScript.Quit(0);
         case "/function": view("Function"); WScript.Quit(0);
         case "/help": view("Usage"); WScript.Quit(0);
