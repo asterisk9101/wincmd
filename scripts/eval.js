@@ -5,7 +5,7 @@
 // 文法
 //     eval [option]... EXPR...
 //     eval [/?] [/help] [/v] [/version]
-//     eval [/sample] [/function]
+//     eval [/syntax] [/sample] [/function]
 // 
 // 説明
 //     eval は EXPR を評価した結果を出力します。
@@ -40,8 +40,8 @@
 //         バージョン情報を出力して正常終了します。
 // 
 // 一般的な eval コマンドとの差異
-//     一般的な eval コマンドは存在しません。
-//     Linux における expr , test または find コマンドに相当します。
+//     一般的な eval コマンドは、引数を1つにまとめてコマンドとして実行しますが、
+//     この eval コマンドは Linux における expr , test または find コマンドに相当します。
 // 
 
 // [Syntax]
