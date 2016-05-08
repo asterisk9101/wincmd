@@ -761,18 +761,21 @@ function evalate(opts, expr) {
                 // filesystem
                 case "fullpath": ret = fso.GetAbsolutePathName(value(ary[0])); break;
                 case "file": ret = fso.FileExists(value(ary[0]));break;
+                case "empty": ret = func_empty(value(ary[0])); break;
+                case "folder":
                 case "dir": ret = fso.FolderExists(value(ary[0])); break;
-                case "size": 
-                    ret = fso.GetFile(value(ary[0])).Size;
-                    break;
+                case "size": ret = fso.GetFile(value(ary[0])).Size; break;
                 case "cdate": ret = new Date(fso.GetFile(value(ary[0])).DateCreated); break;
                 case "mdate": ret = new Date(fso.GetFile(value(ary[0])).DateLastModified); break;
                 case "adate": ret = new Date(fso.GetFile(value(ary[0])).DateLastAccessed); break;
                 
                 // string
+                case "to_n": ret = +value(ary[0]); break;
                 case "length": ret = value(ary[0]).length; break;
                 case "slice": ret = func_slice(ary); break;
                 case "indexof": ret = func_indexof(ary); break;
+                case "upper": ret = value(ary[0]).toUpperCase(); break;
+                case "lower": ret = value(ary[0]).toLowerCase(); break;
                 
                 // date
                 case "today": ret = new Date(); break;
@@ -787,6 +790,7 @@ function evalate(opts, expr) {
                 case "floor": ret = Math.floor(value(ary[0])); break;
                 case "ceil": ret = Math.ceil(value(ary[0])); break;
                 case "round": ret = Math.round(value(ary[0])); break;
+                case "pow": ret = Math.pow(value(ary[0]), value(ary[1])); break;
                 default: throw new Error("not found."); break;
                 }
                 return ret;
@@ -799,6 +803,16 @@ function evalate(opts, expr) {
                 return node.children;
             } else {
                 error("tyep error: expected LIST, but was " + node.token.type);
+            }
+        }
+        function func_empty(path) {
+            if (fso.FileExists(path)) {
+                return fso.GetFile(path).Size === 0;
+            } else if (fso.FolderExists(path)) {
+                var folder = fso.GetFolder(path);
+                return folder.files.count === 0 && folder.subFolders.count === 0;
+            } else {
+                throw new Error("file or folder not found: " + path);
             }
         }
         function func_indexof(ary) {
