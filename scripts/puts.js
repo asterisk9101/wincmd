@@ -67,6 +67,7 @@ function get_opt(index, opts, strings) {
     for(i = 0, len = arg.length; i < len; i++){
         ch = arg.charAt(i);
         switch(ch){
+        case "l": opts.log = true; break;
         case "f": opts.full = true; break;
         case "?": view("Usage"); WScript.Quit(0);
         case "v": view("Version"); WScript.Quit(0);
@@ -81,18 +82,11 @@ function parse_arguments(){
         arg = WScript.Arguments(i);
         if (arg === "--" || arg === "//") { i++; break; }
         switch(arg) {
-        case "/n":
-            opts.n = true;
-            break;
-        case "/help":
-            view("Usage");
-            WScript.Quit(0);
-        case "/version":
-            view("Version");
-            WScript.Quit(0);
-        default:
-            i = get_opt(i, opts, strings);
-            break;
+        case "/log": opts.log = true; break;
+        case "/n": opts.n = true; break;
+        case "/help": view("Usage"); WScript.Quit(0);
+        case "/version": view("Version"); WScript.Quit(0);
+        default: i = get_opt(i, opts, strings); break;
         }
     }
     for(; i < len; i++){
@@ -101,6 +95,9 @@ function parse_arguments(){
     }
     return {opts: opts, strings: strings };
 }
+function keta2(str) {
+    return ("0" + str).slice(-2);
+}
 
 var args, opts, strings;
 args = parse_arguments();
@@ -108,12 +105,21 @@ opts = args.opts;
 strings = args.strings;
 
 // exec
-var i, len;
+var i, len, str, d;
 for(i = 0, len = strings.length; i < len; i++){
+    str = strings[i];
+    if (opts.log) {
+        d = new Date();
+        str = [
+            d.getFullYear() + "/" + keta2(d.getMonth()) + "/" + keta2(d.getDay()) + " " + 
+            keta2(d.getHours()) + ":" + keta2(d.getMinutes()) + ":" + keta2(d.getSeconds()) + "." + keta2(d.getMilliseconds()) + " " +
+            str
+            ].join("")
+    }
     if (opts.n){
-        WScript.StdOut.Write(strings[i]);
+        WScript.StdOut.Write(str);
     } else {
-        WScript.StdOut.WriteLine(strings[i]);
+        WScript.StdOut.WriteLine(str);
     }
 }
 WScript.Quit(0);
