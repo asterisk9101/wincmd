@@ -524,7 +524,6 @@ function evalate(opts, expr) {
     function Parser(lexer) {
         // EXPR = END
         //      = VALUE (OPERATOR2 VALUE)*
-        //      = OPERATOR1 VALUE
         // VALUE = STRING
         //       = "@" STRING
         //       = NUMBER
@@ -532,6 +531,7 @@ function evalate(opts, expr) {
         //       = BOOLEAN
         //       = FUNCTION "(" (EXPR ("," EXPR)*)* ")"
         //       = "(" EXPR ")"
+        //       = OPERATOR1 VALUE
         // OPERATOR2 = "+"
         //           = "-"
         //           = "*"
@@ -605,15 +605,8 @@ function evalate(opts, expr) {
             if (token.type === "END") {
                 return root; // return
             }
-            if (isOP1()){
-                op = OP1(token);
-                consume();
-                val = value();
-                op.push(val);
-                root.push(op);
-            } else {
-                root.push(value());
-            }
+            
+            root.push(value());
             while (isOP2()) {
                 op = new Node(token);
                 consume();
@@ -657,9 +650,19 @@ function evalate(opts, expr) {
         function value() {
             var node;
             switch(token.type){
-            case "NUMBER": node = new Node(token); consume(); break;
-            case "STRING": node = new Node(token); consume(); break;
-            case "DATE": node = new Node(token); consume(); break;
+            case "NUMBER": 
+            case "STRING": 
+            case "DATE": 
+                node = new Node(token);
+                consume(); 
+                break;
+            case "PLUS":
+            case "MINUS":
+            case "NOT":
+                node = new Node(token);
+                consume();
+                node.push(value());
+                break;
             case "LPA": 
                 consume(); // skip LPA
                 node = expr();
