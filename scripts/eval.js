@@ -280,10 +280,14 @@ function get_opt(index, opts, files) {
 }
 function parse_arguments(){
     var i, len, arg, opts = {}, files = [];
-    for(i = 0, len = WScript.Arguments.length; i < len; i++){
+    i = 0;
+    len = WScript.Arguments.length;
+    if (len === 0) { view("Usage"); WScript.Quit(2); }
+    for(; i < len; i++){
         arg = WScript.Arguments(i);
         if (arg === "--" || arg === "//") { i++; break; }
         switch(arg) {
+        case "/": error("invalid argument: '/'");
         case "/stdin": opts.stdin = true; break;
         case "/filter": opts.filter = true; break;
         case "/silent": opts.silent = true; break;
@@ -928,7 +932,7 @@ function evalate(opts, expr) {
             switch(Object.prototype.toString.call(ret).slice(8, -1)){
             case "Object": WScript.StdOut.WriteLine("null"); break;
             case "Boolean":
-            case "Number":
+            case "Number": 
             case "Date": WScript.StdOut.WriteLine(ret.toString()); break;
             case "String":
             default: WScript.StdOut.WriteLine(ret); break;
