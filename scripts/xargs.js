@@ -123,7 +123,13 @@ if (!Array.prototype.map) {
 }
 function xargs(opts, init_args){
     function blankQuote(str) {
-        return str.indexOf(" ") === -1 ? str : "\"" + str + "\"";
+        if (str.indexOf(" ") > -1) {
+            return "\"" + str + "\"";
+        } else if (str.indexOf("@") > -1) {
+            return "\"" + str + "\"";
+        } else {
+            return str;
+        }
     }
     function insertArgs(replace_str, init_args, arg){
         var i, len, ret = [init_args[0]];
