@@ -24,6 +24,9 @@
 //     /s, /silent
 //         結果を出力しません。
 // 
+//     /F
+//         eval をフィルタモードで実行します。/ifs を指定していする場合と等価です。
+// 
 //     /syntax
 //         EVAL コマンドの文法を表示して正常終了します。
 // 
@@ -268,6 +271,11 @@ function get_opt(index, opts, files) {
     for(i = 0, len = arg.length; i < len; i++){
         ch = arg.charAt(i);
         switch(ch){
+        case "F":
+            opts.stdin = true;
+            opts.filter = true;
+            opts.silent = true;
+            break;
         case "i": opts.stdin = true; break;
         case "f": opts.filter = true; break;
         case "s": opts.silent = true; break;
