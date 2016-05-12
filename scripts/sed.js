@@ -581,6 +581,7 @@ function sed(opts, scripts, inputs) {
                 if (!isFinite(hex)) { break; }
                 uffff = (uffff * 16) + hex;
             }
+            next();
             return String.fromCharCode(uffff);
         }
         function is_number(c) {
