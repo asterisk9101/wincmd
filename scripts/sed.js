@@ -575,14 +575,15 @@ function sed(opts, scripts, inputs) {
             return buf.join("");
         }
         function hex() {
-            var uffff = 0, i, hex;
-            for (i = 0; i < 4; i++) {
-                hex = parseInt(next(), 16);
-                if (!isFinite(hex)) { break; }
-                uffff = (uffff * 16) + hex;
-            }
+            var xffff = 0, i, hex;
             next();
-            return String.fromCharCode(uffff);
+            for (i = 0; i < 4; i++) {
+                hex = parseInt(ch, 16);
+                if (!isFinite(hex)) { break; }
+                xffff = (xffff * 16) + hex;
+                next();
+            }
+            return String.fromCharCode(xffff);
         }
         function is_number(c) {
             return "0" <= c && c <= "9";
