@@ -339,15 +339,14 @@ function evalate(opts, expr) {
             while (ch && ch <= " ") { next(); }
         }
         function hex() {
-            var xffff, hex, i;
-            xffff = 0;
+            var uffff = 0, hex, i;
             for(i = 0; i < 4; i++){
                 hex = parseInt(ch, 16);
                 if (!isFinite(hex)) { break; }
-                xffff = xffff * 16 + hex;
+                uffff = uffff * 16 + hex;
                 next();
             }
-            return String.fromCharCode(xffff);
+            return String.fromCharCode(uffff);
         }
         function string(esc) {
             var buf = [];
