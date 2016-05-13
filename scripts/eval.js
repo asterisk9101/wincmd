@@ -775,86 +775,55 @@ function evalate(opts, expr) {
             return ret;
         }
         function op_minus(args){
-            var node = args[0];
-            return - value(node);
+            return -value(args[0]);
         }
         function op_plus(args){
-            var node = args[0];
-            return + value(node);
+            return +value(args[0]);
         }
         function op_not(args) {
-            var node = args[0];
-            return ! value(node);
+            return !value(args[0]);
         }
         function op_add(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(left) + value(right);
+            return value(args[0]) + value(args[1]);
         }
         function op_sub(args) {
-            var left = value(args[0]);
-            var right = value(args[1]);
-            return left - right;
+            return value(args[0]) - value(args[1]);
         }
         function op_mul(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(args[0]) * value(right);
+            return value(args[0]) * value(args[1]);
         }
         function op_div(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(args[0]) / value(right);
+            return value(args[0]) / value(args[1]);
         }
         function op_mod(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(args[0]) % value(right);
+            return value(args[0]) % value(args[1]);
         }
         function op_eql(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(args[0]) === value(right);
+            return value(args[0]) === value(args[1]);
         }
         function op_neq(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(args[0]) !== value(right);
+            return value(args[0]) !== value(args[1]);
         }
         function op_gt(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(args[0]) > value(right);
+            return value(args[0]) > value(args[1]);
         }
         function op_gte(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(args[0]) >= value(right);
+            return value(args[0]) >= value(args[1]);
         }
         function op_lt(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(args[0]) < value(right);
+            return value(args[0]) < value(args[1]);
         }
         function op_lte(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(args[0]) <= value(right);
+            return value(args[0]) <= value(args[1]);
         }
         function op_mul(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(args[0]) * value(right);
+            return value(args[0]) * value(args[1]);
         }
         function op_and(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(args[0]) && value(right);
+            return value(args[0]) && value(args[1]);
         }
         function op_or(args) {
-            var left = args[0];
-            var right = args[1];
-            return value(args[0]) || value(right);
+            return value(args[0]) || value(args[1]);
         }
         function literal(type, node) {
             if (node.token.type === type) {
