@@ -585,9 +585,9 @@ function evalate(opts, expr) {
         }
         function OP1(token) {
             switch(token.type){
-            case "NOT": return new Node(token);
-            case "ADD": return new Node(new Token("PLUS", "+"));
-            case "SUB": return new Node(new Token("MINUS", "-"));
+            case "NOT": return token;
+            case "ADD": return new Token("PLUS", "+");
+            case "SUB": return new Token("MINUS", "-");
             }
         }
         function isOP2() {
@@ -660,6 +660,7 @@ function evalate(opts, expr) {
         }
         function value() {
             var node;
+            if (isOP1()) { token = OP1(token); }
             switch(token.type){
             case "NUMBER": 
             case "STRING": 
