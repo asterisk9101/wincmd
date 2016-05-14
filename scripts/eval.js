@@ -9,7 +9,7 @@
 // 
 // 説明
 //     eval は EXPR を評価した結果を出力します。
-//     結果が true(または数値、文字列など) なった場合は、%ERRORLEVEL% に 0 を設定します。
+//     結果が true(または数値、文字列など) の場合は、%ERRORLEVEL% に 0 を設定します。
 //     結果が false (または null, NaN) の場合は、%ERRORLEVEL% に 1 を設定します。
 //     式の評価自体に失敗した場合は、%ERRORLEVEL% に 2 以上の値を設定します。
 // 
@@ -25,7 +25,7 @@
 //         結果を出力しません。
 // 
 //     /F
-//         eval をフィルタモードで実行します。/ifs を指定していする場合と等価です。
+//         eval をフィルタモードで実行します。/ifs を指定する場合と等価です。
 // 
 //     /syntax
 //         EVAL コマンドの文法を表示して正常終了します。
@@ -208,23 +208,45 @@
 //         STRING を NUMBER1 文字目以降を切り出した STRING を返します。
 //         NUMBER2 を指定すると、NUBMER1 から NUMBER2 文字目を切り出した STRING を返します。
 // 
-//     indexof(STRING, STRING)
+//     indexof(STRING1, STRING2)
+//         STRING1 の中に STRING2 があるか検索します。
+//         発見した位置(Number)を返します。
+//         発見できなかった場合は -1 を返します。
 // 
 //     upper(STRING)
+//         STRING を大文字にして返します。
 // 
 //     lower(STRING)
+//         STRING を小文字にして返します。
 // 
 // 数学
 //     sqrt(NUMBER)
 //         NUMBER の平方根を返します。
 // 
-//     pow(NUMBER, NUMBER)
-//     floor(NUMBER)
-//     ceil(NUMBER)
-//     sin(NUMBER)
-//     cos(NUMBER)
-//     tan(NUMBER)
+//     pow(NUMBER1, NUMBER2)
+//         NUMBER1 を NUMBER2 のべき乗で返します。
+// 
 //     round(NUMBER)
+//         NUMBER を四捨五入した値を返します。
+// 
+//     floor(NUMBER)
+//         NUMBER の小数部を切り捨てた値を返します。
+// 
+//     ceil(NUMBER)
+//         NUMBER の小数部を切り上げた値を返します。
+// 
+//     sin(NUMBER)
+//         NUMBER の sin 値を返します。NUMBER はラジアンです。
+// 
+//     cos(NUMBER)
+//         NUMBER の cos 値を返します。NUMBER はラジアンです。
+// 
+//     tan(NUMBER)
+//         NUMBER の tan 値を返します。NUMBER はラジアンです。
+// 
+// 日付
+//     today()
+//         システム日付を返します。
 // 
 
 // [Version]
