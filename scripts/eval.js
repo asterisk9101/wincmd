@@ -219,6 +219,9 @@
 //     lower(STRING)
 //         STRING を小文字にして返します。
 // 
+//     depth(STRING)
+//         STRING をバックスラッシュ(円記号、\)で分割したとき、分割された要素の数を返す。
+// 
 // 数学
 //     sqrt(NUMBER)
 //         NUMBER の平方根を返します。
@@ -866,6 +869,7 @@ function evalate(opts, expr) {
                 case "folder":
                 case "dir": ret = fso.FolderExists(value(ary[0])); break;
                 case "size": ret = fso.GetFile(value(ary[0])).Size; break;
+                case "depth": ret = value(ary[0]).split("\\").length; break;
                 case "cdate": ret = new Date(fso.GetFile(value(ary[0])).DateCreated); break;
                 case "mdate": ret = new Date(fso.GetFile(value(ary[0])).DateLastModified); break;
                 case "adate": ret = new Date(fso.GetFile(value(ary[0])).DateLastAccessed); break;
