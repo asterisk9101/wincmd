@@ -136,7 +136,7 @@ function parse_arguments(){
     opts.b = false; // ignore blank
     opts.tempdir = "";
     opts.u = false; // unique
-    opts.bufferSize = 1024; // line num
+    opts.bufferSize = 102400; // line num
     opts.mergedir = "";
     for(; i < len; i++){
         arg = WScript.Arguments(i);
