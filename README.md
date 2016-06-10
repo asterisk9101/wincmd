@@ -46,13 +46,21 @@ set PATH=C:\wincmd\bin;%PATH%
 - wc
 - which
 - xargs
+- msort(sortの代替)
 
 # 作りかけ
 
 - awk(きっと永遠に作りかけ)
 
 # 作りたい
-- sort
 - grep
 - find
 - make
+- jq
+- csv を見やすく表示するツール
+- csv に対して sql を発行するツール
+- csv を join するツール
+- xml と json を相互変換するツール
+- 日付を生成・計算するツール
+- エクセルフォーマットからデータを取り出すツール
+- cowsay
