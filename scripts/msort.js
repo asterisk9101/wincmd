@@ -29,7 +29,7 @@
 //         一度に読み込む行数を指定する。
 //         この行数を超えるファイルを読み込んだ場合は一時ファイルが作成される。
 //         デフォルトでは 102400 行を読み込む。
-//         
+// 
 //     /o OUTFILE
 //         出力先を標準出力から OUTFILE に変更する。
 // 
@@ -37,13 +37,13 @@
 //         /S オプションで指定された行数を超えるファイルをソートする場合に
 //         一時ファイルが作成されるフォルダを指定する。
 //         デフォルトではカレントディレクトリが設定される。
-//         
+// 
 //     /M DIR
 //         /S オプションで指定された行数の2倍を超えるファイルをソートする場合に
 //         一時ファイルが作成されるフォルダを指定する。
 //         デフォルトでは /T と同じフォルダが指定されるが、/T とは別のディスクを
 //         指定するとパフォーマンスが向上する可能性がある。
-//         
+// 
 //     /b
 //         各行の比較の際に、行頭の空白を無視する。
 // 
@@ -102,7 +102,7 @@ function view(label) {
 function echo(m) {
     WScript.Echo(m);
 }
-function get_next_arg(index) {
+function get_arg(index) {
     if (index < WScript.Arguments.length) {
         return WScript.Arguments(index);
     } else {
@@ -128,30 +128,30 @@ function parse_arguments(){
     var i, len, arg, opts = {}, files = [];
     i = 0;
     len = WScript.Arguments.length;
-    opts.keys = [];
-    opts.f = false; // ignore case
-    opts.t = " "; // separator
-    opts.r = false; // reverse
-    opts.outfile = "-"; // stdout
     opts.b = false; // ignore blank
+    opts.bufferSize = 102400; // line num
+    opts.f = false; // ignore case
+    opts.keys = [];
+    opts.mergedir = "";
+    opts.outfile = "-"; // stdout
+    opts.r = false; // reverse
+    opts.t = " "; // separator
     opts.tempdir = "";
     opts.u = false; // unique
-    opts.bufferSize = 102400; // line num
-    opts.mergedir = "";
     for(; i < len; i++){
         arg = WScript.Arguments(i);
         if (arg === "--" || arg === "//") { i++; break; }
         switch(arg) {
         case "/": error("invalid argument: '/'");
-        case "/S": i++; opts.bufferSize = +get_next_arg(i); break;
-        case "/T": i++; opts.tempdir = get_next_arg(i); break;
-        case "/D": i++; opts.mergedir = get_next_arg(i); break;
+        case "/D": i++; opts.mergedir = get_arg(i); break;
+        case "/S": i++; opts.bufferSize = +get_arg(i); break;
+        case "/T": i++; opts.tempdir = get_arg(i); break;
         case "/b": opts.b = true; break;
         case "/f": opts.f = true; break;
-        case "/k": i++; opts.keys.push(get_next_arg(i)); break;
+        case "/k": i++; opts.keys.push(get_arg(i)); break;
+        case "/o": i++; opts.outfile = get_arg(i); break;
         case "/r": opts.r = true; break;
-        case "/o": i++; opts.outfile = get_next_arg(i); break;
-        case "/t": i++; opts.t = get_next_arg(i); break;
+        case "/t": i++; opts.t = get_arg(i); break;
         case "/u": opts.u = true; break;
         case "/help": view("Usage"); WScript.Quit(0);
         case "/version": view("Version"); WScript.Quit(0);
@@ -227,46 +227,49 @@ function msort(opts, files) {
         temp.Close();
         out.Close();
     }
-    function compare(a, b) {
-        var i, len, key, trim = /^\s+|\s+$/, ret, fa, fb;
-        ret = false;
-        fa = a;
-        fb = b;
-        for(i = 0, len = keys.length; i < len; i++) {
-            key = keys[i];
-            
-            // select field
-            if (key.index < 0) {
-                error("invalid column index. '" + key.index + "'");
-            } else if (key.index !== 0) {
-                fa = a.split(delim)[key.index - 1];
-                fb = b.split(delim)[key.index - 1];
-            }
-            
-            // normalize
-            if (key.type === "n") {
-                fa = +fa;
-                fb = +fb;
-            } else if (key.type === "s") {
-                if (key.opts.f) {
-                    fa = fa.toUpperCase();
-                    fb = fb.toLowerCase();
+    function compareObject(opts) {
+        var keys = opts.keys;
+        var delim = opts.t;
+        var trim = /^\s+|\s+$/;
+        return function (a, b) {
+            var fa = a, fb = b;
+            var i, len, key;
+            for(i = 0, len = keys.length; i < len; i++) {
+                key = keys[i];
+                
+                // select field
+                if (key.index < 0) {
+                    error("invalid column index. '" + key.index + "'");
+                } else if (key.index !== 0) {
+                    fa = a.split(delim)[key.index - 1];
+                    fb = b.split(delim)[key.index - 1];
                 }
-                if (key.opts.b) {
-                    fa = fa.replace(trim, "");
-                    fb = fb.replace(trim, "");
+                
+                // normalize
+                if (key.type === "n") {
+                    fa = +fa;
+                    fb = +fb;
+                } else if (key.type === "s") {
+                    if (key.opts.f) {
+                        fa = fa.toUpperCase();
+                        fb = fb.toLowerCase();
+                    }
+                    if (key.opts.b) {
+                        fa = fa.replace(trim, "");
+                        fb = fb.replace(trim, "");
+                    }
+                }
+                
+                // compare
+                if (fa !== fb) {
+                    if (key.opts.r) {
+                        return fa < fb;
+                    } else {
+                        return fa > fb;
+                    }
                 }
             }
-            
-            // compare
-            if (fa !== fb) {
-                if (key.opts.r) {
-                    return fa < fb;
-                } else {
-                    return fa > fb;
-                }
-            }
-        }
+        };
     }
     var keys = opts.keys.map(function (key) {
         // type
@@ -276,13 +279,14 @@ function msort(opts, files) {
         //   f: ignore case
         //   b: ignore blank
         //   r: reverse
-        var index = 0, type = "s";
+        var index = 0;
+        var type = "s";
         var o = {
             f: opts.f || false,
             b: opts.b || false,
             r: opts.r || false
         };
-        var i, ch;
+        var i, len, ch;
         i = 0;
         ch = key.charAt(i);
         while("0" <= ch && ch <= "9") {
@@ -290,7 +294,8 @@ function msort(opts, files) {
             i++;
             ch = key.charAt(i);
         }
-        while (i < key.length) {
+        len = key.length;
+        while (i < len) {
             switch (ch) {
             case "n":
             case "s": type = ch; break;
@@ -305,13 +310,12 @@ function msort(opts, files) {
         return { index: index, type: type, opts: o};
     });
     
-    
+    var compare = compareObject(opts);
     var fso = WScript.CreateObject("Scripting.FileSystemObject");
-    var delim = opts.t;
     var uniq = opts.u;
     var buffer = opts.bufferSize;
     var memory = [], work;
-    var input = files_stream(files, opts.br), out, merge, temp;
+    var input = files_stream(files, opts.br), out, temp;
     var tempPath = "", outPath = "", mergePath = "", path = "";
     var i, len;
     for (i = 0; i < buffer; i++) {
@@ -327,7 +331,7 @@ function msort(opts, files) {
         for (i = 0, len = memory.length; i < len; i++) {
             out.WriteLine(memory[i]);
         }
-        return;
+        return; // return
     }
     
     // out core sort(temp only)
@@ -346,7 +350,7 @@ function msort(opts, files) {
         mergesort(memory, 0, memory.length, work);
         mergefile(memory, tempPath, opts.outfile);
         fso.DeleteFile(tempPath);
-        return;
+        return; // return
     }
     
     // out core sort(temp and merge)
