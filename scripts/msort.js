@@ -227,7 +227,45 @@ function msort(opts, files) {
         temp.Close();
         out.Close();
     }
-    function compareObject(opts) {
+    var keys = opts.keys.map(function (key) {
+        // type
+        //   s: string
+        //   n: number
+        // opt
+        //   f: ignore case
+        //   b: ignore blank
+        //   r: reverse
+        var index = 0;
+        var type = "s";
+        var o = {
+            f: opts.f || false,
+            b: opts.b || false,
+            r: opts.r || false
+        };
+        var i, len, ch;
+        i = 0;
+        ch = key.charAt(i);
+        while("0" <= ch && ch <= "9") {
+            index = index * 10 + (+ch);
+            i++;
+            ch = key.charAt(i);
+        }
+        len = key.length;
+        while (i < len) {
+            switch (ch) {
+            case "n":
+            case "s": type = ch; break;
+            case "f": o.f = true; break;
+            case "b": o.b = true; break;
+            case "r": o.r = true; break;
+            default: error("invalid sort option. '" + ch + "'");
+            }
+            i++;
+            ch = key.charAt(i);
+        }
+        return { index: index, type: type, opts: o};
+    });
+    var compare = (function (opts) {
         var keys = opts.keys;
         var delim = opts.t;
         var trim = /^\s+|\s+$/;
@@ -270,47 +308,7 @@ function msort(opts, files) {
                 }
             }
         };
-    }
-    var keys = opts.keys.map(function (key) {
-        // type
-        //   s: string
-        //   n: number
-        // opt
-        //   f: ignore case
-        //   b: ignore blank
-        //   r: reverse
-        var index = 0;
-        var type = "s";
-        var o = {
-            f: opts.f || false,
-            b: opts.b || false,
-            r: opts.r || false
-        };
-        var i, len, ch;
-        i = 0;
-        ch = key.charAt(i);
-        while("0" <= ch && ch <= "9") {
-            index = index * 10 + (+ch);
-            i++;
-            ch = key.charAt(i);
-        }
-        len = key.length;
-        while (i < len) {
-            switch (ch) {
-            case "n":
-            case "s": type = ch; break;
-            case "f": o.f = true; break;
-            case "b": o.b = true; break;
-            case "r": o.r = true; break;
-            default: error("invalid sort option. '" + ch + "'");
-            }
-            i++;
-            ch = key.charAt(i);
-        }
-        return { index: index, type: type, opts: o};
-    });
-    
-    var compare = compareObject(opts);
+    })(opts);
     var fso = WScript.CreateObject("Scripting.FileSystemObject");
     var uniq = opts.u;
     var buffer = opts.bufferSize;
