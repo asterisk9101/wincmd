@@ -227,7 +227,7 @@ function msort(opts, files) {
         temp.Close();
         out.Close();
     }
-    var keys = opts.keys.map(function (key) {
+    opts.keys = opts.keys.map(function (key) {
         // type
         //   s: string
         //   n: number
