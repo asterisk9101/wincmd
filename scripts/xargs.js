@@ -34,6 +34,7 @@
 //         バージョン番号を表示して正常終了する。
 // 
 // 一般的な xargs との差異
+//         いっぱい
 // 
 
 // [Version]
@@ -64,7 +65,7 @@ function view(label) {
         }
     }
 }
-function get_next_arg(index) {
+function get_arg(index) {
     if (index < WScript.Arguments.length) {
         return WScript.Arguments(index);
     } else {
@@ -74,52 +75,6 @@ function get_next_arg(index) {
 }
 function echo(m) {
     WScript.Echo(m);
-}
-// https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce
-if (!Array.prototype.reduce) {
-    Array.prototype.reduce = function reduce(accumulator){
-        if (this===null || this===undefined) throw new TypeError("Object is null or undefined");
-        var i = 0, l = this.length >> 0, curr;
-        if(typeof accumulator !== "function") {
-            // ES5 : "If IsCallable(callbackfn) is false, throw a TypeError exception."
-            throw new TypeError("First argument is not callable");
-        }
-        if(arguments.length < 2) {
-            if (l === 0) throw new TypeError("Array length is 0 and no second argument");
-            curr = this[0];
-            i = 1; // start accumulating at the second element
-        } else {
-            curr = arguments[1];
-        }
-        while (i < l) {
-            if(i in this) curr = accumulator.call(undefined, curr, this[i], i, this);
-            ++i;
-        }
-        return curr;
-    };
-}
-// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map
-if (!Array.prototype.map) {
-    Array.prototype.map = function(callback, thisArg) {
-        var T, A, k;
-        if (this == null) { throw new Error(' this is null or not defined'); }
-        var O = Object(this);
-        var len = O.length >>> 0;
-        if (typeof callback !== 'function') { throw new Error(callback + ' is not a function'); }
-        if (arguments.length > 1) { T = thisArg; }
-        A = new Array(len);
-        k = 0;
-        while (k < len) {
-            var kValue, mappedValue;
-            if (k in O) {
-                kValue = O[k];
-                mappedValue = callback.call(T, kValue, k, O);
-                A[k] = mappedValue;
-            }
-            k++;
-        }
-        return A;
-    };
 }
 function xargs(opts, init_args){
     function blankQuote(str) {
@@ -192,6 +147,52 @@ function xargs(opts, init_args){
         exec(opts, init_args, args);
     }
 }
+// https://developer.mozilla.org/ja/docs/Web/JavaScript/Reference/Global_Objects/Array/reduce
+if (!Array.prototype.reduce) {
+    Array.prototype.reduce = function reduce(accumulator){
+        if (this===null || this===undefined) throw new TypeError("Object is null or undefined");
+        var i = 0, l = this.length >> 0, curr;
+        if(typeof accumulator !== "function") {
+            // ES5 : "If IsCallable(callbackfn) is false, throw a TypeError exception."
+            throw new TypeError("First argument is not callable");
+        }
+        if(arguments.length < 2) {
+            if (l === 0) throw new TypeError("Array length is 0 and no second argument");
+            curr = this[0];
+            i = 1; // start accumulating at the second element
+        } else {
+            curr = arguments[1];
+        }
+        while (i < l) {
+            if(i in this) curr = accumulator.call(undefined, curr, this[i], i, this);
+            ++i;
+        }
+        return curr;
+    };
+}
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/map
+if (!Array.prototype.map) {
+    Array.prototype.map = function(callback, thisArg) {
+        var T, A, k;
+        if (this == null) { throw new Error(' this is null or not defined'); }
+        var O = Object(this);
+        var len = O.length >>> 0;
+        if (typeof callback !== 'function') { throw new Error(callback + ' is not a function'); }
+        if (arguments.length > 1) { T = thisArg; }
+        A = new Array(len);
+        k = 0;
+        while (k < len) {
+            var kValue, mappedValue;
+            if (k in O) {
+                kValue = O[k];
+                mappedValue = callback.call(T, kValue, k, O);
+                A[k] = mappedValue;
+            }
+            k++;
+        }
+        return A;
+    };
+}
 
 // parse options
 var arg, i, len, opts = {}, init_args = [];
@@ -212,13 +213,13 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
         break;
     case "/I":
         i++;
-        opts.I = get_next_arg(i);
+        opts.I = get_arg(i);
         opts.max_args = 1;
         break;
     case "/n":
     case "/max_args":
         i++;
-        opts.max_args = +get_next_arg(i);
+        opts.max_args = +get_arg(i);
         delete opts.I;
         break;
     case "/?":
