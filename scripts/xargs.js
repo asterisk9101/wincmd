@@ -15,6 +15,9 @@
 //     /!, /carefully
 //         コマンドの実行結果 (%ERRORLEVEL%) が 0 以外の場合は、後続のコマンドを実行せず終了します。
 // 
+//     /q, /quote
+//         標準入力から受け取った行毎にダブルクォートで括ってコマンドを作成します。
+// 
 //     /t, /whatif
 //         作成されたコマンドを表示します。コマンドは実行されません。
 // 
@@ -77,14 +80,8 @@ function echo(m) {
     WScript.Echo(m);
 }
 function xargs(opts, init_args){
-    function blankQuote(str) {
-        if (str.indexOf(" ") > -1) {
-            return "\"" + str + "\"";
-        } else if (str.indexOf("　") > -1) {
-            return "\"" + str + "\"";
-        } else {
-            return str;
-        }
+    function quote(str){
+        return "\"" + str + "\"";
     }
     function insertArgs(replace_str, init_args, arg){
         var i, len, ret = [init_args[0]];
@@ -95,13 +92,15 @@ function xargs(opts, init_args){
     }
     function constract_cmdline(opts, init_args, args) {
         var cmdline;
-        var i, len;
+        if (opts.quote) {
+            args = args.map(quote); 
+        }
         if (opts.I && args.length === 1) {
             cmdline = insertArgs(opts.I, init_args, args[0]);
         } else {
             cmdline = init_args.concat(args);
         }
-        return cmdline.map(blankQuote).join(" ");
+        return cmdline.join(" ");
     }
     function exec(opts, init_args, args){
         var shell = WScript.CreateObject("WScript.Shell");
@@ -202,6 +201,10 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
     if (arg === "--") { break; }
     if (arg.charAt(0) !== "/") { break;}
     switch (arg) {
+    case "/q":
+    case "/quote":
+        opts.quote = true;
+        break;
     case "/!":
     case "/carefully":
         opts.carefully = true;
