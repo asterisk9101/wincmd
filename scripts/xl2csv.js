@@ -15,6 +15,7 @@
 //     /o OUTFILE, /outfile OUTFILE
 //         出力先 OUTFILE を指定します。
 //         以下のマクロが使用でき、それぞれ右辺の文字列に置換されます。
+//         (マクロを使用する場合は、引数全体をダブルクォートで括る必要があります)
 // 
 //         <book> = ブック名
 //         <sheet> = シート名
@@ -37,7 +38,7 @@
 // 
 //         アスタリスク（全てのシート）
 //         1 以上の数値（左端から数えたシートのインデックス）
-//         シングルクォートに囲まれた名前（シートの名前）
+//         スラッシュに囲まれた名前（シートの名前）
 //         ドル記号（右端のシート）
 // 
 //         また、ADDRESS はハイフンを含むことで範囲指定することができ、
@@ -45,7 +46,7 @@
 //         例えば、hoge, fuga, piyo, moge という 4 つのシートを持つエクセルブック HOGE.xls に
 //         対して以下のようにコマンドを実行した場合：
 // 
-//         xl2csv /s 1-2,'moge' /o "C:\temp\<*>" HOGE.xls
+//         xl2csv /s 1-2,/moge/ /o "C:\temp\<*>" HOGE.xls
 // 
 //         以下のファイルが出力されます。
 // 
@@ -262,9 +263,9 @@ function xl2csv (opts, file) {
             }
             return ret;
         }
-        function pattern() {
+        function pattern(delim) {
             var buf = [];
-            while (next() !== "'") {
+            while (next() !== delim) {
                 if (ch === "") { error("invalid pattern."); }
                 buf.push(ch);
             }
@@ -274,13 +275,13 @@ function xl2csv (opts, file) {
             var addr, tmp;
             if ("0" <= ch && ch <= "9") {
                 addr = new index_addr(number());
-            } else if (ch === "'") {
-                addr = new regex_addr(pattern());
+            } else if (ch === "/") {
+                addr = new regex_addr(pattern("/"));
             } else if (ch === "$") {
                 addr = new tail_addr();
                 next();
             } else {
-                error("?");
+                error("ivalid address.");
             }
             if (ch === "-") {
                 next();
@@ -292,7 +293,7 @@ function xl2csv (opts, file) {
                     tmp = new tail_addr();
                     next();
                 } else {
-                    error("?");
+                    error("invalid address for range.");
                 }
                 addr = new range_addr(addr, tmp);
             }
