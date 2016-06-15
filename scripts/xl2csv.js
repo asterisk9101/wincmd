@@ -59,7 +59,6 @@
 // 
 //     /h, /hidden
 //         エクセルを非表示で実行します。
-//         後述の既知の不具合などでコマンドが停止したとき、バックグラウンドにエクセルのプロセスが残るので注意してください。
 // 
 //     /?, /help
 //         ヘルプを表示して正常終了します。
@@ -70,9 +69,6 @@
 // 一般的な xl2csv コマンドとの差異
 //     一般的な xl2csv コマンドは存在しません。
 //     csvkit(https://csvkit.readthedocs.io/) の in2csv に相当します。
-// 
-// 既知の不具合
-//     outfile が既に存在する場合などにエラーで停止します。
 // 
 
 // [Version]
@@ -138,6 +134,7 @@ function parse_arguments() {
     opts.outfile = "-";
     opts.passwd = void 0;
     opts.wpasswd = void 0;
+    opts.quiet = false;
     for(; i < len; i++){
         arg = WScript.Arguments(i);
         if (arg === "--" || arg === "//") { i++; break; }
@@ -146,7 +143,8 @@ function parse_arguments() {
         case "/sheet": i++; opts.sheet = get_arg(i); break;
         case "/outfile": i++; opts.outfile = get_arg(i); break;
         case "/hidden": opts.hidden = true; break;
-        case "/password": i++; opts.passwd = get_arg(i); break; 
+        case "/password": i++; opts.passwd = get_arg(i); break;
+        case "/quiet": opts.quiet = true; break; 
         case "/help": view("Usage"); WScript.Quit(0);
         case "/version": view("Version"); WScript.Quit(0);
         default: i = get_opt(i, opts, files); break;
@@ -323,50 +321,98 @@ function xl2csv (opts, file) {
         outpath = fso.GetAbsolutePathName(outpath);
         return outpath;
     }
-    var fso = WScript.CreateObject("Scripting.FileSystemObject");
-    var ex = WScript.CreateObject("Excel.Application");
-    var book, sheet, path, tempBook, tempPath;
-    var checklist = parse(opts.sheet || "*");
-    var i, len, sheet_state = {};
-    ex.visible = !opts.hidden;
-    book = ex.workbooks.open(
-        file, // filename
-        3, // UpdateLinks
-        true, // ReadOnly
-        2, // Format
-        opts.passwd, // Password
-        void 0, // WriteResPassword
-        true // IgnoreReadOnlyRecommended
-        );
-    sheet_state.count = book.worksheets.count;
-    sheet_state.bookName = fso.GetBaseName(book.name);
-    for (i = 1, len = book.worksheets.count; i <= len; i++) {
-        sheet_state.index = i;
-        sheet = book.worksheets(i);
-        sheet_state.name = sheet.name;
-        if (checklist.some(function (matcher) { return matcher.match(sheet_state); })) {
-            tempBook = ex.workbooks.add();
-            sheet.copy(tempBook.worksheets(1));
-            if (opts.outfile === "-") {
-                path = fso.BuildPath(fso.GetSpecialFolder(2), fso.GetTempName());
-                tempBook.saveAs(path, 6);
-                tempBook.Close(false);
-                stream = fso.OpenTextFile(path);
-                while (!stream.AtEndOfStream) {
-                    WScript.StdOut.WriteLine(stream.ReadLine());
+    function export_csv(opts, sheet, outpath) {
+        var tempBook;
+        tempBook = sheet.Application.workbooks.add();
+        sheet.copy(tempBook.worksheets(1));
+        tempBook.worksheets(1).Activate();
+        try {
+            tempBook.saveAs(outpath, 6);
+            if (!opts.quiet) { WScript.StdOut.WriteLine(outpath); }
+        } catch (e) {
+            error("export csv fail. '" + outpath + "'");
+        }
+        tempBook.Close(false);
+    }
+    function output_stdout(opts, sheet) {
+        var path, file;
+        path = fso.BuildPath(fso.GetSpecialFolder(2), fso.GetTempName());
+        try {
+            export_csv(opts, sheet, path);
+            file = fso.OpenTextFile(path);
+            while (!file.AtEndOfStream) {
+                WScript.StdOut.WriteLine(file.ReadLine());
+            }
+            fso.DeleteFile(path);
+        } catch (e) {
+            WScript.StdErr.WriteLine(e.message);
+        }
+    }
+    function output_file(opts, sheet, sheet_state) {
+        var path = parse_outpath(opts.outfile, sheet_state);
+        try {
+            export_csv(opts, sheet, path);
+        } catch (e) {
+            WScript.StdErr.WriteLine(e.message);
+        }
+    }
+    function sheets_loop(opts, book, checklist) {
+        var sheet_state = {}, i, len;
+        sheet_state.count = book.worksheets.count;
+        sheet_state.bookName = fso.GetBaseName(book.name);
+        for (i = 1, len = book.worksheets.count; i <= len; i++) {
+            sheet_state.index = i;
+            sheet = book.worksheets(i);
+            sheet_state.name = sheet.name;
+            if (checklist.some(function (matcher) { return matcher.match(sheet_state); })) {
+                if (opts.outfile === "-") {
+                    output_stdout(opts, sheet);
+                } else {
+                    output_file(opts, sheet, sheet_state);
                 }
-                stream.Close();
-                fso.DeleteFile(path);
-            } else {
-                path = parse_outpath(opts.outfile, sheet_state);
-                tempBook.saveAs(path, 6);
-                WScript.StdOut.WriteLine(path);
-                tempBook.close(false);
             }
         }
     }
-    book.Close(false);
-    ex.quit();
+    function get_book(opts, excel, filepath) {
+        var book;
+        try {
+            book = excel.workbooks.open(
+                filepath, // filename
+                3, // UpdateLinks
+                true, // ReadOnly
+                2, // Format
+                opts.passwd, // Password
+                void 0, // WriteResPassword
+                true // IgnoreReadOnlyRecommended
+                );
+        } catch (e) {
+            error("file open fail. '" + filepath + "'");
+        }
+        return book;
+    }
+    function get_excel(opts) {
+        var excel;
+        try {
+            excel = WScript.CreateObject("Excel.Application");
+        } catch (e) {
+            error("Excel not found.");
+        }
+        excel.visible = !opts.hidden;
+        return excel;
+    }
+    var fso = WScript.CreateObject("Scripting.FileSystemObject");
+    var checklist = parse(opts.sheet || "*");
+    var excel, book;
+    excel = get_excel(opts);
+    try {
+        if (!fso.FileExists(file)) { error("file not found. '" + file + "'"); }
+        book = get_book(opts, excel, file);
+        sheets_loop(opts, book, checklist);
+        book.Close(false);
+    } catch (e) {
+        WScript.StdErr.WriteLine(e.message);
+    }
+    excel.quit();
 }
 if (!Array.prototype.some) {
     Array.prototype.some = function(fun/*, thisArg*/) {
