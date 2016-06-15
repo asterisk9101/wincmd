@@ -31,6 +31,7 @@ set PATH=C:\wincmd\bin;%PATH%
 - ll(dir | findstr "^2")
 - ls(dir /b)
 - mkdate(日付を生成して標準出力に流す)
+- msort(sortの代替)
 - mustache
 - paste
 - ps(tasklist)
@@ -46,7 +47,7 @@ set PATH=C:\wincmd\bin;%PATH%
 - wc
 - which
 - xargs
-- msort(sortの代替)
+- xl2csv(エクセルフォーマットからデータを取り出すツール)
 
 # 作りかけ
 
@@ -62,5 +63,4 @@ set PATH=C:\wincmd\bin;%PATH%
 - csv を join するツール
 - xml と json を相互変換するツール
 - 日付を生成・計算するツール
-- エクセルフォーマットからデータを取り出すツール
 - cowsay
