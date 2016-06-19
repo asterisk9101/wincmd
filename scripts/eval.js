@@ -623,6 +623,7 @@ function evalate(opts, expr) {
             case "DIV":
             case "MOD":
             case "EQL":
+            case "NEQ":
             case "GT":
             case "GTE":
             case "LT":
