@@ -44,6 +44,9 @@
 //         デフォルトでは /T と同じフォルダが指定されるが、/T とは別のディスクを
 //         指定するとパフォーマンスが向上する可能性がある。
 // 
+//     /h, /header
+//         一行目をヘッダとして扱う。
+// 
 //     /b
 //         各行の比較の際に、行頭の空白を無視する。
 // 
@@ -130,6 +133,7 @@ function parse_arguments(){
     len = WScript.Arguments.length;
     opts.b = false; // ignore blank
     opts.bufferSize = 102400; // line num
+    opts.header = false;
     opts.f = false; // ignore case
     opts.keys = [];
     opts.mergedir = "";
@@ -147,6 +151,8 @@ function parse_arguments(){
         case "/S": i++; opts.bufferSize = +get_arg(i); break;
         case "/T": i++; opts.tempdir = get_arg(i); break;
         case "/b": opts.b = true; break;
+        case "/h": 
+        case "/header": opts.header = true; break;
         case "/f": opts.f = true; break;
         case "/k": i++; opts.keys.push(get_arg(i)); break;
         case "/o": i++; opts.outfile = get_arg(i); break;
@@ -316,6 +322,14 @@ function msort(opts, files) {
     var input = files_stream(files, opts.br), out, temp;
     var tempPath = "", outPath = "", mergePath = "", path = "";
     var i, len;
+
+    var header;
+
+    if (opts.header && !input.AtEndOfStream) {
+        header = input.ReadLine();
+    }
+
+    // fill memory buffer
     for (i = 0; i < buffer; i++) {
         if (input.AtEndOfStream) { break; }
         memory.push(input.ReadLine());
@@ -326,6 +340,9 @@ function msort(opts, files) {
     mergesort(memory, 0, memory.length, work);
     if (input.AtEndOfStream) {
         out = opts.outfile === "-" ? WScript.StdOut : fso.OpenTextFile(opts.outfile, 2, true);
+        if (opts.header && header) {
+            out.WriteLine(header);
+        }
         for (i = 0, len = memory.length; i < len; i++) {
             out.WriteLine(memory[i]);
         }
@@ -346,6 +363,9 @@ function msort(opts, files) {
     if (input.AtEndOfStream) {
         memory = memory.slice(0, i - 1);
         mergesort(memory, 0, memory.length, work);
+        if (opts.header && header) {
+            out.WriteLine(header);
+        }
         mergefile(memory, tempPath, opts.outfile);
         fso.DeleteFile(tempPath);
         return; // return
@@ -369,6 +389,9 @@ function msort(opts, files) {
         if (input.AtEndOfStream) {
             memory = memory.slice(0, i - 1);
             mergesort(memory, 0, memory.length, work);
+            if (opts.header && header) {
+                out.WriteLine(header);
+            }
             mergefile(memory, tempPath, opts.outfile);
             fso.DeleteFile(tempPath);
             fso.DeleteFile(mergePath);
