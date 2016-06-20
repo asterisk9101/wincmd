@@ -752,7 +752,7 @@ function evalate(opts, expr) {
         if (token.type === "END") {
             return ast;
         } else {
-            error("too many expr.");
+            error("invalid expr.");
         }
     }
     function Visitor(opts) {
@@ -897,7 +897,7 @@ function evalate(opts, expr) {
                 case "ceil": ret = Math.ceil(value(ary[0])); break;
                 case "round": ret = Math.round(value(ary[0])); break;
                 case "pow": ret = Math.pow(value(ary[0]), value(ary[1])); break;
-                default: throw new Error("not found."); break;
+                default: error("not found."); break;
                 }
                 return ret;
             } catch (e) {
