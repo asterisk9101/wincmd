@@ -871,17 +871,19 @@ function sed(opts, scripts, inputs) {
         //WScript.StdOut.Write(files.Read(1));
     }
     */
-    var list = parser(scripts.join(opts.br));
-    /* test parser
-    var item = list;
-    while(item.cmd.name !== "") {
-        echo(item.toString());
-        item = item.next;
-    }
-    */
     
-    var vm = vmachine(opts, list);
-    vm.run(files);
+    var list, item, vm;
+    list = parser(scripts.join(opts.br));
+    if (opts.debug) {
+        item = list;
+        while(item.cmd.name !== "") {
+            WScript.Echo(item.toString());
+            item = item.next;
+        }
+    } else {
+        vm = vmachine(opts, list);
+        vm.run(files);
+    }
 }
 function files_stream (paths, br_pattern) {
     // 複数のファイルパスを受け取り、それららの内容を連続したストリームとして出力する。
@@ -1010,6 +1012,9 @@ for(i = 0, len = WScript.Arguments.length; i < len; i++) {
     if (arg === "--") { break; }
     if (arg.charAt(0) !== "/") { break;}
     switch (arg) {
+    case "/debug":
+        opts.debug = true;
+        break;
     case "/b":
     case "/break":
         i++;
