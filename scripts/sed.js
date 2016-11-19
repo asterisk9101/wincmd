@@ -469,7 +469,7 @@ function sed(opts, scripts, inputs) {
             // string without break
             var buf = [];
             while(ch !== "") {
-                if (ch === "\r" || ch === "\n" || ch === "") { break; }
+                if (ch === "\r" || ch === "\n" || ch === "" || ch === ";") { break; }
                 buf.push(ch);
                 next();
             }
