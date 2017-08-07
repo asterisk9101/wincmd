@@ -107,10 +107,7 @@ function sed(opts, scripts, inputs) {
                 break;
             case "MATCH":
                 ret = true;
-                if (this.addr2.match(sed_state)) { this.state = "CLOSE"; }
-                break;
-            case "CLOSE":
-                ret = false;
+                if (this.addr2.match(sed_state)) { this.state = "UNMATCH"; }
                 break;
             default:
                 error("");
@@ -217,11 +214,18 @@ function sed(opts, scripts, inputs) {
     Command.prototype = {
         type: "COMMAND",
         toString: function () {
-            var buf = [], i, len;
+            var buf = [], i, len, item;
             buf.push("(" + this.name);
-            for(i = 0, len = this.args.length; i < len; i++) {
+            if (this.name === "GROUP") {
                 buf.push(" ");
-                buf.push(this.args[i].toString());
+                for(item = this.args[0]; item; item = item.next) {
+                    buf.push(item.toString())
+                }
+            } else {
+                for(i = 0, len = this.args.length; i < len; i++) {
+                    buf.push(" ");
+                    buf.push(this.args[i].toString());
+                }
             }
             buf.push(")");
             return buf.join("");
@@ -253,6 +257,24 @@ function sed(opts, scripts, inputs) {
             default:
                 error("require break.");
             }
+        }
+        function program() {
+            var ret = statements();
+            white();
+            if(ch !== "") { error("unexpected `" + ch + "'"); }
+            return ret;
+        }
+        function statements() {
+            var list_head = statement();
+            var list_item = list_head;
+            white();
+            while(ch !== "") {
+                if (ch === "}") { break }
+                list_item.next = statement();
+                list_item = list_item.next;
+                white();
+            }
+            return list_head;
         }
         function statement() {
             var addr, cmd, skip = /[ \n\r\t;]/;
@@ -325,10 +347,10 @@ function sed(opts, scripts, inputs) {
             switch(name) {
             case "":
                 // script end
+                if (addr.type !== "BLANK_ADDRESS") { error("missing command"); }
                 break;
             case "}":
-                if (addr.type !== "BLANK_ADDRESS") { error("doesn't want any address"); }
-                break;
+                error("unexpected `}'");
             case "#":
                 if (addr.type !== "BLANK_ADDRESS") { error("doesn't want any address"); }
                 white();
@@ -340,7 +362,14 @@ function sed(opts, scripts, inputs) {
                 args.push(string_line());
                 break;
             case "{": 
+                name = "GROUP"
+                args.push(statements());
                 white();
+                if(ch === "}") {
+                    next();
+                } else {
+                    error("unmatched `{'");
+                }
                 break;
             case "=": 
             case "d": 
@@ -589,19 +618,12 @@ function sed(opts, scripts, inputs) {
             return "0" <= c && c <= "9";
         }
         
-        var list_head, list_item, skip = /[ \n\t;]/;
         at = 0;
         ch = text.charAt(at);
         
-        list_head = statement();
-        list_item = list_head;
-        while(list_item.cmd.name !== "") {
-            list_item.next = statement();
-            list_item = list_item.next;
-        }
-        return list_head;
+        return program();
     }
-    
+
     function vmachine(opt, list){
         var sed_state = {
             pattern: [],
@@ -611,14 +633,12 @@ function sed(opts, scripts, inputs) {
         };
         
         var stat_head = list;
-        var stat_tail = null;
         var pc = null;
         var labels = {};
         
         var stream = null;
-        var success = false;
-        var next_cycle = false;
-        var addr_stack = [];
+        var substitute_succeeded = false;
+        var next_stack = [];
         var append_text = [];
         var fso = WScript.CreateObject("Scripting.FileSystemObject");
         
@@ -695,17 +715,14 @@ function sed(opts, scripts, inputs) {
             var bool, label;
             switch(cmd.name){
             case "b": bool = true; break;
-            case "t": bool = success; break;
-            case "T": bool = !success; break;
+            case "t": bool = substitute_succeeded; break;
+            case "T": bool = !substitute_succeeded; break;
             }
             
             label = cmd.args[0];
-            addr_stack = [];
             if (bool) {
-                pc = label === "" ? stat_tail : labels[label];
-            }
-            if (!pc) {
-                error("missing branch");
+                next_stack = [];
+                pc = label ? labels[label] : null ;
             }
         }
         function cmd_substitute(cmd) {
@@ -729,7 +746,7 @@ function sed(opts, scripts, inputs) {
             */
             regexp.test("\0"); // dry run for JScript bug...
             if(regexp.test(text)){
-                success = true;
+                substitute_succeeded = true;
                 text = text.replace(regexp, replacement);
                 if (flags.indexOf("w") > -1) {
                     file = fso.OpenTextFile(path, 8, true);
@@ -741,7 +758,7 @@ function sed(opts, scripts, inputs) {
                 }
                 sed_state.pattern = text.split(stream.br);
             } else {
-                success = false;
+                substitute_succeeded = false;
             }
         }
         function cmd_y(cmd) {
@@ -760,19 +777,20 @@ function sed(opts, scripts, inputs) {
             switch(cmd.name) {
             case "#": 
             case ":": break;
-            case "}": addr_stack.pop(); break;
-            case "{": addr_stack.push(stat.addr); break;
             case "=": WScript.StdOut.WriteLine(sed_state.line_num); break;
-            case "d": 
-                next_cycle = true;
+            case "GROUP":
+                next_stack.push(pc.next);
+                pc = { next: pc.cmd.args[0] || next_stack.pop() };
                 break;
             case "D": 
-                if (sed_state.pattern.length > 1) {
-                    sed_state.pattern.shift();
-                    pc = stat_head;
-                } else {
-                    next_cycle = true;
-                }
+                if (sed_state.pattern.length) { sed_state.pattern.shift(); }
+                next_stack = [];
+                pc = null; // interruption current cycle, and start next cycle
+                break; 
+            case "d":
+                sed_state.pattern = [];
+                next_stack = [];
+                pc = null; // interruption current cycle, and start next cycle
                 break;
             case "h": sed_state.hold = sed_state.pattern; break;
             case "H": sed_state.hold.push(sed_state.pattern.join(stream.br)); break;
@@ -808,53 +826,65 @@ function sed(opts, scripts, inputs) {
             }
         }
         function match(addr){
-            var i, len, ret = true;
-            for(i = 0, len = addr_stack.length; i < len; i++){
-                if (!addr_stack[i].match(sed_state)) {
-                    ret = false;
-                    break;
-                }
+            return addr.match(sed_state);
+        }
+        function next() {
+            if (pc === null) { return null }
+
+            if (pc.next) {
+                pc = pc.next;
+            } else if (next_stack.length) {
+                pc = next_stack.pop();
+            } else {
+                pc = null;
             }
-            return ret && addr.match(sed_state);
+            return pc;
+        }
+        function flush_pattern_space() {
+            if (!opt.n && sed_state.pattern.length) {
+                WScript.StdOut.Write(sed_state.pattern.join(stream.br) + stream.br);
+            }
+        }
+        function flush_append_text() {
+            if (append_text.length !== 0) {
+                WScript.StdOut.Write(append_text.join(stream.br) + stream.br);
+                append_text = [];
+            }
         }
         function run(strm) {
             var str;
             stream = strm;
             cycle: while(!stream.AtEndOfStream){
-                next_cycle = false;
                 sed_state.pattern = [stream.ReadLine()];
                 sed_state.line_num += 1;
                 sed_state.AtEndOfStream = stream.AtEndOfStream;
                 pc = stat_head;
-                while(pc && pc.cmd.name !== ""){
-                    if(match(pc.addr) || pc.cmd.name === "{" || pc.cmd.name === "}"){
+                while(pc){
+                    if(match(pc.addr)){
                         exec(pc);
                     }
-                    if (next_cycle) { continue cycle; }
-                    pc = pc.next;
+                    pc = next();
                 }
-                str = sed_state.pattern.join(stream.br);
-                if(!opt.n) {
-                    WScript.StdOut.Write(str + stream.br);
-                }
-                if (append_text.length !== 0) {
-                    WScript.StdOut.Write(append_text.join(stream.br) + stream.br);
-                    append_text = [];
-                }
+                flush_pattern_space();
+                flush_append_text();
             }
         }
-        
-        // init lables
-        pc = stat_head;
-        while(pc.cmd.name !== ""){
-            if(pc.cmd.name === ":") {
-                labels[pc.cmd.args[0]] = pc;
+
+        function scan(item, func) {
+            while(item) {
+                if (item.cmd.name === "GROUP") {
+                    scan(item.cmd.args[0], func);
+                } else {
+                    func(item);
+                }
+                item = item.next;
             }
-            pc = pc.next;
         }
-        
-        // init stat_tail
-        stat_tail = pc;
+
+        // collect pointer to labels
+        scan(stat_head, function (item) { if(item.cmd.name === ":") {
+            labels[item.cmd.args[0]] = item;
+        }});
         
         // init pc
         pc = stat_head;
@@ -875,10 +905,8 @@ function sed(opts, scripts, inputs) {
     var list, item, vm;
     list = parser(scripts.join(opts.br));
     if (opts.debug) {
-        item = list;
-        while(item.cmd.name !== "") {
-            WScript.Echo(item.toString());
-            item = item.next;
+        for (item = list; item; item = item.next) {
+            echo(item.toString());
         }
     } else {
         vm = vmachine(opts, list);
