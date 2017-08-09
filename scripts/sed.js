@@ -119,29 +119,13 @@ function sed(opts, scripts, inputs) {
         }
     };
     function StepAddress(addr, step) {
-        this.addr = addr; // number, regex
+        this.first = addr.num; // number
         this.step = step; // number
-        this.match_line = -1; // match line number
     }
     StepAddress.prototype = {
         type: "STEP_ADDRESS",
         match: function (sed_state) {
-            var ret;
-            if (this.match_line === -1) {
-                if (this.addr.match(sed_state)) {
-                    this.match_line = sed_state.line_num;
-                    ret = true;
-                } else {
-                    ret = false
-                }
-            } else {
-                if ((sed_state.line_num - this.match_line) % this.step) {
-                    ret = false;
-                } else {
-                    ret = true;
-                }
-            }
-            return ret;
+            return sed_state.line_num % this.step === this.first
         },
         toString: function () {
             return "(" + this.type + " " + this.addr.toString() + " " + this.step + ")";
@@ -289,6 +273,10 @@ function sed(opts, scripts, inputs) {
             
             if (is_number(ch)) {
                 addr = new NumberAddress(number());
+                if (ch === "~") {
+                    next();
+                    addr = new StepAddress(addr, number());
+                }
             } else if (ch === "/") {
                 addr = new RegexAddress(regex(ch));
                 addr.re.ignoreCase = true;
@@ -302,13 +290,6 @@ function sed(opts, scripts, inputs) {
                 next();
             } else {
                 return new BlankAddress();
-            }
-            
-            white();
-            if (ch === "~") {
-                next();
-                white();
-                addr = new StepAddress(addr, number());
             }
             
             white();
