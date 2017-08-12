@@ -40,13 +40,13 @@
 // 
 //     コンパイル済み正規表現を再利用することはできない。
 // 
-//     アドレスの指定方法として 0,addr2 や addr1,+N や addr1,~N は使用できない。
+//     アドレスの指定方法として addr,+N や addr,~N は使用できない。
 // 
 //     一部のコマンドは未実装(l, r, R)。
 // 
 
 // [Version]
-// sed.js version 0.1
+// sed.js version 0.2
 
 function error(m) {
     WScript.StdErr.WriteLine(m);
